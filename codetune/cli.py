@@ -93,6 +93,53 @@ def cmd_plot(args: argparse.Namespace) -> int:
     return 0
 
 
+def _prepare_clone() -> None:
+    """Stage BigCloneBench under ``data/clone/``.
+
+    Prefers a local copy from the upstream layout; that data is gitignored, so a
+    fresh clone of this repo (Colab, Kaggle, anyone else's machine) will not have
+    it and falls back to the public CodeXGLUE copy on the Hugging Face Hub. Free,
+    public, no account or token needed.
+    """
+    names = ("data.jsonl", "train.txt", "valid.txt", "test.txt")
+    if all((DATA_ROOT / "clone" / n).exists() for n in names):
+        print("[prepare] clone: already staged")
+        return
+
+    local = REPO_ROOT / "clone" / "dataset"
+    if all((local / n).exists() for n in names):
+        for name in names:
+            shutil.copy2(local / name, DATA_ROOT / "clone" / name)
+            print(f"[prepare] clone/{name} (local)")
+        return
+
+    print("[prepare] clone: downloading BigCloneBench from the Hugging Face Hub")
+    from datasets import load_dataset
+
+    ds = load_dataset(
+        "google/code_x_glue_cc_clone_detection_big_clone_bench", trust_remote_code=True
+    )
+    funcs: dict[str, str] = {}
+    for split, out_name in (("train", "train.txt"), ("validation", "valid.txt"), ("test", "test.txt")):
+        rows = 0
+        with (DATA_ROOT / "clone" / out_name).open("w", encoding="utf-8") as fo:
+            # Batched so the 900k-row train split is never materialised at once.
+            for batch in ds[split].iter(batch_size=5000):
+                for id1, id2, f1, f2, label in zip(
+                    batch["id1"], batch["id2"], batch["func1"], batch["func2"], batch["label"]
+                ):
+                    funcs.setdefault(str(id1), f1)
+                    funcs.setdefault(str(id2), f2)
+                    fo.write(f"{id1}\t{id2}\t{int(label)}\n")
+                    rows += 1
+        print(f"[prepare] clone/{out_name} ({rows:,} pairs)")
+
+    with (DATA_ROOT / "clone" / "data.jsonl").open("w", encoding="utf-8") as fo:
+        for idx, func in funcs.items():
+            fo.write(json.dumps({"idx": idx, "func": func}) + "\n")
+    print(f"[prepare] clone/data.jsonl ({len(funcs):,} unique functions)")
+
+
 def cmd_prepare(args: argparse.Namespace) -> int:
     """Stage both datasets under ``data/``.
 
@@ -103,11 +150,7 @@ def cmd_prepare(args: argparse.Namespace) -> int:
     (DATA_ROOT / "defect").mkdir(parents=True, exist_ok=True)
     (DATA_ROOT / "clone").mkdir(parents=True, exist_ok=True)
 
-    for name in ("data.jsonl", "train.txt", "valid.txt", "test.txt"):
-        src, dst = REPO_ROOT / "clone" / "dataset" / name, DATA_ROOT / "clone" / name
-        if src.exists() and not dst.exists():
-            shutil.copy2(src, dst)
-            print(f"[prepare] clone/{name}")
+    _prepare_clone()
 
     wanted = {"train.jsonl", "valid.jsonl", "test.jsonl"}
     missing = {n for n in wanted if not (DATA_ROOT / "defect" / n).exists()}
