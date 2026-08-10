@@ -1,0 +1,82 @@
+{
+  "run_id": "clone__full__seed42",
+  "config": {
+    "task": "clone",
+    "method": "full",
+    "seed": 42,
+    "epochs": 2,
+    "lr": 5e-05,
+    "peft_lr": 0.0001,
+    "batch_size": 16,
+    "grad_accum": 2,
+    "max_length": 128,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.06,
+    "fp16": true,
+    "device": "auto",
+    "limit_train": 600,
+    "limit_eval": 1000,
+    "model_name": "microsoft/codebert-base",
+    "output_dir": "results",
+    "method_kwargs": {}
+  },
+  "effective_learning_rate": 5e-05,
+  "effective_batch_size": 32,
+  "data": {
+    "train": {
+      "split": "train",
+      "n_available": 901028,
+      "n_used": 600,
+      "subsampled": true,
+      "positive_rate": 0.5
+    },
+    "test": {
+      "split": "test",
+      "n_available": 415416,
+      "n_used": 1000,
+      "subsampled": true,
+      "positive_rate": 0.136
+    }
+  },
+  "metrics": {
+    "accuracy": 0.721,
+    "macro_precision": 0.5876666139824035,
+    "macro_recall": 0.6557734204793029,
+    "macro_f1": 0.5888054873097119,
+    "positive_f1": 0.3556581986143187,
+    "predicted_positive_rate": 0.297,
+    "majority_class_rate": 0.703,
+    "collapsed": false
+  },
+  "cost": {
+    "trainable_params": 124647170,
+    "total_params": 124647170,
+    "live_total_params": 124647170,
+    "trainable_pct": 100.0,
+    "seconds": 177.1,
+    "peak_memory_bytes": 3392496128,
+    "peak_memory_mb": 3235.3,
+    "peak_reserved_bytes": 3598712832,
+    "peak_reserved_mb": 3432.0,
+    "delta_checkpoint_bytes": 498588680,
+    "delta_checkpoint_mb": 475.49
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.69998
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.60694
+    }
+  ],
+  "environment": {
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce GTX 1660 Ti",
+    "torch": "2.4.1+cu121",
+    "python": "3.10.1",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "fp16": true
+  }
+}

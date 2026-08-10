@@ -172,8 +172,8 @@ no network access required by the unit tests.
 - [x] 3.4 **Clone (BigCloneBench)** — 4 methods × 3 seeds, seq 400, deterministically
       subsampled to 20 k train / 2 k val / 4 k test. **Subset size stated in the README** —
       not presented as the full benchmark
-- [ ] 3.5 Aggregate → `results/summary.csv` + mean ± std per method/task/metric
-- [ ] 3.6 Plots → `results/figures/` (accuracy-vs-trainable-params, accuracy-vs-peak-VRAM,
+- [x] 3.5 Aggregate → `results/summary.csv` + mean ± std per method/task/metric
+- [x] 3.6 Plots → `results/figures/` (accuracy-vs-trainable-params, accuracy-vs-peak-VRAM,
       per-method bars with error bars)
 - [x] 3.7 `/code-review` at high level on the Phase 3 diff; fix real findings
 

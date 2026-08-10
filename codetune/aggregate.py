@@ -8,6 +8,7 @@ run-to-run noise larger than several of the gaps it drew conclusions from.
 from __future__ import annotations
 
 import json
+import sys
 import statistics
 from pathlib import Path
 
@@ -132,6 +133,21 @@ def to_markdown(rows: list[dict]) -> str:
     return "\n".join(out)
 
 
+def _safe_print(text: str) -> None:
+    """Print to a console that may not speak UTF-8.
+
+    The Windows console defaults to cp1252, which cannot encode the ± and ⚠️ in
+    these tables. Letting that raise would abort *after* the files are written -
+    and a non-zero exit stops any `aggregate && plot` chain, so the figures never
+    get made for a failure that is purely cosmetic.
+    """
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "utf-8"
+        print(text.encode(encoding, errors="replace").decode(encoding))
+
+
 README_START = "<!-- RESULTS:START -->"
 README_END = "<!-- RESULTS:END -->"
 
@@ -171,5 +187,5 @@ def write_summary(results_dir: str | Path = "results") -> list[dict]:
     if update_readme(markdown, readme):
         print(f"[aggregate] refreshed the results section of {readme.name}")
 
-    print(markdown)
+    _safe_print(markdown)
     return rows
