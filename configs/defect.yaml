@@ -1,16 +1,27 @@
 # Devign defect detection (C).
 #
-# Scale is set by measurement, not by preference. A timing probe on the
-# development GPU (GTX 1660 Ti, 6 GB) came out at 0.25 s per training example:
-# Turing GTX cards have no tensor cores, so fp16 buys almost nothing. The grid
-# below is sized to finish in a few hours on that card.
+# SCALE IS SET BY MEASUREMENT, NOT PREFERENCE.
+# Development GPU: GTX 1660 Ti, 6 GB. Turing GTX - no tensor cores, so fp16 buys
+# almost nothing - and it thermally throttles to ~88 C under sustained load.
+# Measured 0.40 s per training example for full fine-tuning: one epoch over
+# 1,500 examples took 10 minutes. A 24-run grid at that size is ~9 hours, so the
+# sizes below are cut to what completes in a few hours on this hardware.
 #
-# Train is subsampled to 2,500 of 21,854 examples, deterministic and stratified
-# per seed; the test split is used whole. Both sizes land in every result JSON,
-# so a reduced-scale run can never be read as a full one. On a free Colab or
-# Kaggle T4 the full split is affordable - see notebooks/run_on_free_gpu.ipynb.
+# WHAT THIS MEANS FOR THE NUMBERS. The cost columns (trainable parameters, delta
+# checkpoint size, peak VRAM, wall-clock) are exact and scale-independent - they
+# are the point of this benchmark. The quality columns are trained on very
+# little data and should be read as a controlled comparison under an identical
+# budget, not as any method's ceiling. Runs that collapse to one predicted class
+# are flagged rather than averaged in silently.
+#
+# For quality numbers at a scale where they mean more, run the same grid on a
+# free Colab or Kaggle T4 (16 GB, tensor cores) via
+# notebooks/run_on_free_gpu.ipynb, which raises these values substantially.
+#
+# Train subsampled to 600 of 21,854; test to 1,000 of 2,732. Deterministic and
+# label-stratified per seed; both sizes recorded in every result JSON.
 task: defect
-epochs: 3
+epochs: 2
 lr: 5.0e-5        # full fine-tuning
 peft_lr: 1.0e-4   # PEFT methods, as in the original study
 batch_size: 16
@@ -19,5 +30,6 @@ max_length: 128
 weight_decay: 0.01
 warmup_ratio: 0.06
 fp16: true
-limit_train: 2500
+limit_train: 600
+limit_eval: 1000
 output_dir: results
