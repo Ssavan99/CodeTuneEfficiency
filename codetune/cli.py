@@ -12,7 +12,8 @@ from pathlib import Path
 
 import yaml
 
-from codetune.data import DATA_ROOT
+from codetune.data import DATA_ROOT, LOADERS
+from codetune.methods import METHODS
 from codetune.train import RunConfig, train_one_run
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -62,8 +63,7 @@ def cmd_grid(args: argparse.Namespace) -> int:
                 args.config,
                 {"method": method, "seed": seed, "device": args.device, "output_dir": args.output_dir},
             )
-            out = Path(cfg.output_dir) / cfg.task / f"{method}__seed{seed}.json"
-            if out.exists() and not args.force:
+            if cfg.result_path().exists() and not args.force:
                 print(f"[grid] skip {cfg.run_id()} (already done)")
                 continue
             try:
@@ -150,8 +150,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("run", help="one fine-tuning run")
     p.add_argument("--config")
-    p.add_argument("--task", choices=["defect", "clone"])
-    p.add_argument("--method", choices=["full", "bitfit", "lora", "parallel_adapter"])
+    p.add_argument("--task", choices=sorted(LOADERS))
+    p.add_argument("--method", choices=sorted(METHODS))
     p.add_argument("--seed", type=int)
     p.add_argument("--epochs", type=int)
     p.add_argument("--device")
@@ -162,7 +162,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("grid", help="all methods x seeds for one config")
     p.add_argument("--config", required=True)
-    p.add_argument("--methods", default="full,bitfit,lora,parallel_adapter")
+    p.add_argument("--methods", default=",".join(METHODS))
     p.add_argument("--seeds", default="42,1337,2024")
     p.add_argument("--device")
     p.add_argument("--output-dir", dest="output_dir", default=None)

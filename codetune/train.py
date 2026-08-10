@@ -58,6 +58,11 @@ class RunConfig:
     def run_id(self) -> str:
         return f"{self.task}__{self.method}__seed{self.seed}"
 
+    def result_path(self) -> Path:
+        """Where this run's result lands. Owned here so the writer and the
+        grid's already-done check can never disagree about the filename."""
+        return Path(self.output_dir) / self.task / f"{self.method}__seed{self.seed}.json"
+
 
 def compute_metrics(labels: np.ndarray, preds: np.ndarray) -> dict:
     """Macro *and* positive-class scores.
@@ -74,7 +79,11 @@ def compute_metrics(labels: np.ndarray, preds: np.ndarray) -> dict:
         "macro_f1": float(f1_score(labels, preds, average="macro", zero_division=0)),
         "positive_f1": float(f1_score(labels, preds, pos_label=1, average="binary", zero_division=0)),
         "predicted_positive_rate": float(np.mean(preds == 1)),
-        "collapsed": bool(len(np.unique(preds)) == 1),
+        # Near-collapse is the same failure as collapse and just as misleading:
+        # a run predicting one class 99% of the time is not a result about the
+        # method. Threshold rather than exact uniformity so it is actually caught.
+        "majority_class_rate": float(np.bincount(preds, minlength=2).max() / len(preds)),
+        "collapsed": bool(np.bincount(preds, minlength=2).max() / len(preds) >= 0.99),
     }
 
 
@@ -91,12 +100,18 @@ def evaluate(model, loader: DataLoader, device: torch.device) -> dict:
     return compute_metrics(np.concatenate(all_labels), np.concatenate(all_preds))
 
 
-def _build_model(cfg: RunConfig, device: torch.device):
+def _build_model(cfg: RunConfig, device: torch.device) -> tuple[torch.nn.Module, int]:
+    """Build the model and return it with the pristine parameter count.
+
+    The count is taken *before* the method runs, so every method is measured
+    against the same denominator even when it restructures the module tree.
+    """
     from transformers import AutoModelForSequenceClassification
 
     model = AutoModelForSequenceClassification.from_pretrained(cfg.model_name, num_labels=2)
+    base_total = sum(p.numel() for p in model.parameters())
     model = apply_method(model, cfg.method, cfg.method_kwargs)
-    return model.to(device)
+    return model.to(device), base_total
 
 
 def train_one_run(cfg: RunConfig, verbose: bool = True, _max_oom_retries: int = 3) -> dict:
@@ -138,19 +153,28 @@ def _train_one_run_attempt(cfg: RunConfig, verbose: bool) -> dict:
     eval_ds, eval_stats = build_split(
         cfg.task, "test", tokenizer, cfg.max_length, cfg.limit_eval, cfg.seed
     )
-    train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True, drop_last=False)
-    eval_loader = DataLoader(eval_ds, batch_size=cfg.batch_size * 2, shuffle=False)
+    # non_blocking transfers are silently synchronous unless the host buffer is
+    # pinned, so without this the async syntax below buys nothing.
+    pin = device.type == "cuda"
+    train_loader = DataLoader(
+        train_ds, batch_size=cfg.batch_size, shuffle=True, drop_last=False, pin_memory=pin
+    )
+    eval_loader = DataLoader(eval_ds, batch_size=cfg.batch_size * 2, shuffle=False, pin_memory=pin)
 
-    model = _build_model(cfg, device)
+    model, base_total = _build_model(cfg, device)
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=cfg.learning_rate(), weight_decay=cfg.weight_decay)
 
-    steps_per_epoch = max(1, len(train_loader) // cfg.grad_accum)
+    # Ceiling, not floor: the loop also steps on the partial group left at the
+    # end of each epoch. Sizing the schedule with floor would leave the last
+    # optimizer steps of the run clamped at a learning rate of zero.
+    n_batches = len(train_loader)
+    steps_per_epoch = max(1, -(-n_batches // cfg.grad_accum))
     total_steps = steps_per_epoch * cfg.epochs
     scheduler = get_linear_schedule_with_warmup(
         optimizer, int(total_steps * cfg.warmup_ratio), total_steps
     )
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
     if verbose:
         print(
@@ -158,11 +182,23 @@ def _train_one_run_attempt(cfg: RunConfig, verbose: bool) -> dict:
             f"eval={eval_stats['n_used']} steps={total_steps} lr={cfg.learning_rate():g}"
         )
 
+    def optimizer_step() -> None:
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(params, 1.0)
+        scaler.step(optimizer)
+        scaler.update()
+        scheduler.step()
+        optimizer.zero_grad(set_to_none=True)
+
     history = []
     with CostTracker(device) as tracker:
         for epoch in range(cfg.epochs):
             model.train()
-            running, seen = 0.0, 0
+            # Accumulated on device: calling .item() per micro-batch forces a
+            # host-GPU sync every step, which inflates the wall-clock this
+            # benchmark reports - and inflates it most for the cheapest methods,
+            # biasing the very comparison the repo exists to make.
+            running = torch.zeros((), device=device)
             optimizer.zero_grad(set_to_none=True)
             for step, batch in enumerate(train_loader):
                 batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
@@ -170,37 +206,27 @@ def _train_one_run_attempt(cfg: RunConfig, verbose: bool) -> dict:
                     loss = model(**batch).loss / cfg.grad_accum
                 scaler.scale(loss).backward()
 
-                if (step + 1) % cfg.grad_accum == 0:
-                    scaler.unscale_(optimizer)
-                    torch.nn.utils.clip_grad_norm_(params, 1.0)
-                    scaler.step(optimizer)
-                    scaler.update()
-                    scheduler.step()
-                    optimizer.zero_grad(set_to_none=True)
+                # The second clause flushes the partial group at the end of an
+                # epoch through the same path as a normal step.
+                if (step + 1) % cfg.grad_accum == 0 or step + 1 == n_batches:
+                    optimizer_step()
 
-                running += loss.item() * cfg.grad_accum
-                seen += 1
-            if seen % cfg.grad_accum != 0:
-                # flush a partial accumulation group left over at the end of the epoch
-                scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(params, 1.0)
-                scaler.step(optimizer)
-                scaler.update()
-                scheduler.step()
-                optimizer.zero_grad(set_to_none=True)
-            history.append({"epoch": epoch + 1, "train_loss": round(running / max(seen, 1), 5)})
+                running += loss.detach() * cfg.grad_accum
+            history.append(
+                {"epoch": epoch + 1, "train_loss": round(running.item() / max(n_batches, 1), 5)}
+            )
             if verbose:
                 print(f"  epoch {epoch + 1}/{cfg.epochs} loss={history[-1]['train_loss']:.4f}")
 
     metrics = evaluate(model, eval_loader, device)
     result = {
         "run_id": cfg.run_id(),
-        "config": {k: v for k, v in asdict(cfg).items()},
+        "config": asdict(cfg),
         "effective_learning_rate": cfg.learning_rate(),
         "effective_batch_size": cfg.batch_size * cfg.grad_accum,
         "data": {"train": train_stats, "test": eval_stats},
         "metrics": metrics,
-        "cost": cost_summary(model, tracker),
+        "cost": cost_summary(model, tracker, base_total),
         "history": history,
         "environment": {
             "device": device.type,
@@ -212,9 +238,8 @@ def _train_one_run_attempt(cfg: RunConfig, verbose: bool) -> dict:
         },
     }
 
-    out_dir = Path(cfg.output_dir) / cfg.task
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{cfg.method}__seed{cfg.seed}.json"
+    out_path = cfg.result_path()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
     if verbose:
         cost = result["cost"]

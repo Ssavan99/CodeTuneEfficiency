@@ -11,16 +11,23 @@ import json
 import statistics
 from pathlib import Path
 
-METRIC_KEYS = ["accuracy", "macro_precision", "macro_recall", "macro_f1", "positive_f1"]
-COST_KEYS = ["trainable_params", "trainable_pct", "peak_memory_mb", "seconds", "delta_checkpoint_mb"]
-METHOD_ORDER = ["full", "bitfit", "lora", "parallel_adapter"]
+from codetune.methods import METHODS
+
+METRIC_KEYS = [
+    "accuracy", "macro_precision", "macro_recall", "macro_f1",
+    "positive_f1", "majority_class_rate",
+]
+COST_KEYS = [
+    "trainable_params", "trainable_pct", "peak_memory_mb",
+    "peak_reserved_mb", "seconds", "delta_checkpoint_mb",
+]
+#: Derived from the method registry so a new method needs one edit, not four.
+METHOD_ORDER = list(METHODS)
 
 
 def load_runs(results_dir: Path) -> list[dict]:
     runs = []
     for path in sorted(Path(results_dir).rglob("*.json")):
-        if path.name == "summary.json":
-            continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -63,19 +70,31 @@ def summarize(runs: list[dict]) -> list[dict]:
             row[f"{key}_mean"] = round(mean, 4) if mean is not None else None
             row[f"{key}_std"] = round(std, 4) if std is not None else None
         for key in COST_KEYS:
-            mean, _ = _mean_std([r["cost"].get(key) for r in group])
+            # Cost gets a spread too. Wall-clock is the noisiest quantity here -
+            # thermal throttling moves it 10-20% between seeds - and reporting it
+            # as a bare point estimate is the omission this module criticises.
+            mean, std = _mean_std([r["cost"].get(key) for r in group])
             row[key] = round(mean, 2) if mean is not None else None
+            row[f"{key}_std"] = round(std, 2) if std is not None else None
         rows.append(row)
 
     rows.sort(key=lambda r: (r["task"], METHOD_ORDER.index(r["method"]) if r["method"] in METHOD_ORDER else 99))
     return rows
 
 
-def _fmt(mean, std, scale=100.0, digits=2) -> str:
+def _pct(mean, std) -> str:
+    """A 0-1 metric as a percentage, with its seed spread when there is one."""
     if mean is None:
         return "—"
-    text = f"{mean * scale:.{digits}f}"
-    return f"{text} ± {std * scale:.{digits}f}" if std is not None else text
+    text = f"{mean * 100:.2f}"
+    return f"{text} ± {std * 100:.2f}" if std is not None else text
+
+
+def _cell(value, suffix="", digits=0) -> str:
+    """Any cost number, or an em dash. Never raises on a missing key."""
+    if value is None:
+        return "—"
+    return f"{value:,.{digits}f}{suffix}"
 
 
 def to_markdown(rows: list[dict]) -> str:
@@ -84,24 +103,31 @@ def to_markdown(rows: list[dict]) -> str:
         task_rows = [r for r in rows if r["task"] == task]
         head = task_rows[0]
         out.append(f"### {task} — {head['train_n']:,} train / {head['test_n']:,} test, "
-                   f"{head['epochs']} epochs, {head['n_seeds']} seeds\n")
-        out.append("| Method | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | Peak VRAM | Train time |")
-        out.append("|---|---|---|---|---|---|---|---|")
+                   f"{head['epochs']} epochs\n")
+        out.append(
+            "| Method | Seeds | Accuracy | Macro F1 | Positive F1 "
+            "| Trainable | Delta ckpt | Peak VRAM | Train time |"
+        )
+        out.append("|---|---|---|---|---|---|---|---|---|")
         for r in task_rows:
-            vram = f"{r['peak_memory_mb']:.0f} MB" if r["peak_memory_mb"] else "—"
-            secs = f"{r['seconds'] / 60:.1f} min" if r["seconds"] else "—"
+            secs = f"{r['seconds'] / 60:.1f} min" if r.get("seconds") else "—"
             flag = " ⚠️" if r["collapsed_runs"] else ""
             out.append(
                 f"| `{r['method']}`{flag} "
-                f"| {_fmt(r['accuracy_mean'], r['accuracy_std'])} "
-                f"| {_fmt(r['macro_f1_mean'], r['macro_f1_std'])} "
-                f"| {_fmt(r['positive_f1_mean'], r['positive_f1_std'])} "
-                f"| {r['trainable_pct']}% ({r['trainable_params']:,.0f}) "
-                f"| {r['delta_checkpoint_mb']} MB "
-                f"| {vram} | {secs} |"
+                f"| {r['n_seeds']} "
+                f"| {_pct(r['accuracy_mean'], r['accuracy_std'])} "
+                f"| {_pct(r['macro_f1_mean'], r['macro_f1_std'])} "
+                f"| {_pct(r['positive_f1_mean'], r['positive_f1_std'])} "
+                f"| {_cell(r['trainable_pct'], '%', 3)} ({_cell(r['trainable_params'])}) "
+                f"| {_cell(r['delta_checkpoint_mb'], ' MB', 2)} "
+                f"| {_cell(r.get('peak_reserved_mb') or r.get('peak_memory_mb'), ' MB')} "
+                f"| {secs} |"
             )
         if any(r["collapsed_runs"] for r in task_rows):
-            out.append("\n⚠️ = at least one seed collapsed to a single predicted class.")
+            out.append(
+                "\n⚠️ = at least one seed predicted a single class for ≥99% of inputs, "
+                "which is a training failure rather than a result about the method."
+            )
         out.append("")
     return "\n".join(out)
 

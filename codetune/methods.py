@@ -16,9 +16,26 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-#: The classifier is randomly initialised, so it must be trainable under every
-#: method or nothing can be learned at all.
-CLASSIFIER_PREFIXES = ("classifier.", "score.")
+def head_parameter_names(model: nn.Module) -> list[str]:
+    """Names of the task head's parameters — everything outside the encoder.
+
+    Asking the model beats matching name fragments. Every HF
+    ``*ForSequenceClassification`` declares ``base_model_prefix`` (``"roberta"``
+    here), and the head is by definition what does not live under it. That covers
+    ``classifier``, ``score``, ``qa_outputs`` and anything future without a list
+    to maintain — and, importantly, a substring match on ``"classifier."`` also
+    matches ``peft``'s frozen ``original_module`` shadow copy of the head, which
+    would silently double-count.
+    """
+    prefix = getattr(model, "base_model_prefix", "")
+    if not prefix:
+        return [name for name, _ in model.named_parameters()]
+    # Match the prefix as a path segment, not a string prefix: wrappers such as
+    # peft rename `roberta.…` to `base_model.model.roberta.…`, so anchoring at
+    # the start would classify the entire model as head.
+    return [
+        name for name, _ in model.named_parameters() if prefix not in name.split(".")
+    ]
 
 
 def _freeze_all(model: nn.Module) -> None:
@@ -26,9 +43,11 @@ def _freeze_all(model: nn.Module) -> None:
         param.requires_grad_(False)
 
 
-def _unfreeze_classifier(model: nn.Module) -> None:
+def _unfreeze_head(model: nn.Module) -> None:
+    """The head is randomly initialised, so it must train under every method."""
+    head = set(head_parameter_names(model))
     for name, param in model.named_parameters():
-        if any(key in name for key in CLASSIFIER_PREFIXES):
+        if name in head:
             param.requires_grad_(True)
 
 
@@ -44,7 +63,7 @@ def apply_bitfit(model: nn.Module, cfg: dict) -> nn.Module:
     for name, param in model.named_parameters():
         if name.endswith(".bias") or name == "bias":
             param.requires_grad_(True)
-    _unfreeze_classifier(model)
+    _unfreeze_head(model)
     return model
 
 
@@ -137,7 +156,7 @@ def apply_parallel_adapter(model: nn.Module, cfg: dict) -> nn.Module:
     for name, param in model.named_parameters():
         if ".adapter." in name:
             param.requires_grad_(True)
-    _unfreeze_classifier(model)
+    _unfreeze_head(model)
     return model
 
 
@@ -150,9 +169,24 @@ METHODS = {
 
 
 def apply_method(model: nn.Module, method: str, cfg: dict | None = None) -> nn.Module:
+    """Apply a method and enforce the contract every method must satisfy.
+
+    Checking postconditions here rather than trusting each method's own mechanism
+    means a fifth method gets the same guarantees for free. In particular the
+    head check is not redundant with "something is trainable": a model whose LoRA
+    adapters are live but whose randomly-initialised head is frozen trains
+    happily and produces garbage.
+    """
     if method not in METHODS:
         raise ValueError(f"unknown method {method!r}; expected one of {sorted(METHODS)}")
     model = METHODS[method](model, cfg or {})
-    if not any(p.requires_grad for p in model.parameters()):
+
+    trainable = {n for n, p in model.named_parameters() if p.requires_grad}
+    if not trainable:
         raise RuntimeError(f"method {method!r} left every parameter frozen")
+    if not trainable & set(head_parameter_names(model)):
+        raise RuntimeError(
+            f"method {method!r} froze the classification head, which is randomly "
+            "initialised - the run would train but learn nothing"
+        )
     return model

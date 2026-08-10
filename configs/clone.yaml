@@ -5,7 +5,7 @@
 # 2,000 test to fit the same $0 budget; subsets are deterministic and
 # label-stratified per seed and their sizes are recorded in every result JSON.
 task: clone
-epochs: 2
+epochs: 3
 lr: 5.0e-5
 peft_lr: 1.0e-4
 batch_size: 16

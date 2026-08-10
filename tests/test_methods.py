@@ -9,7 +9,7 @@ import torch
 from transformers import RobertaConfig, RobertaForSequenceClassification
 
 from codetune.cost import count_parameters, delta_checkpoint_bytes, trainable_state_dict
-from codetune.methods import METHODS, apply_method
+from codetune.methods import METHODS, apply_method, head_parameter_names
 
 
 def tiny_model():
@@ -36,9 +36,9 @@ def test_something_is_trainable(method):
 def test_classifier_head_always_trains(method):
     """The head is randomly initialised — freezing it makes learning impossible."""
     model = apply_method(tiny_model(), method)
-    head = [p for n, p in model.named_parameters() if "classifier" in n or "score" in n]
-    assert head, f"no classifier parameters found for {method}"
-    assert any(p.requires_grad for p in head)
+    head = set(head_parameter_names(model))
+    assert head, f"no head parameters found for {method}"
+    assert any(p.requires_grad for n, p in model.named_parameters() if n in head)
 
 
 def test_full_trains_everything():
@@ -49,9 +49,9 @@ def test_full_trains_everything():
 
 def test_bitfit_trains_only_biases_and_head():
     model = apply_method(tiny_model(), "bitfit")
+    head = set(head_parameter_names(model))
     for name, param in model.named_parameters():
-        is_head = "classifier" in name or "score" in name
-        should_train = name.endswith(".bias") or is_head
+        should_train = name.endswith(".bias") or name in head
         assert param.requires_grad == should_train, (
             f"{name}: requires_grad={param.requires_grad}, expected {should_train} under bitfit"
         )
@@ -84,13 +84,36 @@ def test_parallel_adapter_adds_one_adapter_per_layer():
     assert len(adapters) == model.config.num_hidden_layers
 
 
-def test_delta_checkpoint_matches_trainable_parameters():
-    model = apply_method(tiny_model(), "bitfit")
+@pytest.mark.parametrize("method", sorted(METHODS))
+def test_delta_checkpoint_matches_trainable_parameters(method):
+    """Pins the headline storage number for every method, including lora.
+
+    peft renames parameters and keeps a shadow copy of the head, so a silent
+    mismatch between named_parameters() and state_dict() would show up here
+    rather than as a wrong number in the README.
+    """
+    model = apply_method(tiny_model(), method)
+    expected = sum(p.numel() * p.element_size() for p in model.parameters() if p.requires_grad)
+    assert delta_checkpoint_bytes(model) == expected
+
     state = trainable_state_dict(model)
     assert state, "trainable state dict should not be empty"
-    expected = sum(t.numel() * t.element_size() for t in state.values())
-    assert delta_checkpoint_bytes(model) == expected
-    assert delta_checkpoint_bytes(model) < delta_checkpoint_bytes(apply_method(tiny_model(), "full"))
+    assert sum(t.numel() * t.element_size() for t in state.values()) == expected
+
+
+def test_peft_methods_ship_less_than_full():
+    full = delta_checkpoint_bytes(apply_method(tiny_model(), "full"))
+    for method in ("bitfit", "lora", "parallel_adapter"):
+        assert delta_checkpoint_bytes(apply_method(tiny_model(), method)) < full
+
+
+def test_lora_is_measured_against_the_pristine_denominator():
+    """peft's frozen shadow copy of the head must not inflate total_params."""
+    base = tiny_model()
+    base_total = sum(p.numel() for p in base.parameters())
+    counts = count_parameters(apply_method(base, "lora"), base_total)
+    assert counts["total_params"] == base_total
+    assert counts["live_total_params"] > base_total  # the shadow copy is really there
 
 
 def test_unknown_method_is_rejected():

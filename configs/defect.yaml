@@ -10,7 +10,7 @@
 # so a reduced-scale run can never be read as a full one. On a free Colab or
 # Kaggle T4 the full split is affordable - see notebooks/run_on_free_gpu.ipynb.
 task: defect
-epochs: 2
+epochs: 3
 lr: 5.0e-5        # full fine-tuning
 peft_lr: 1.0e-4   # PEFT methods, as in the original study
 batch_size: 16

@@ -11,12 +11,12 @@ import matplotlib.pyplot as plt  # noqa: E402
 
 from codetune.aggregate import load_runs, summarize  # noqa: E402
 
-COLORS = {
-    "full": "#264653",
-    "bitfit": "#2a9d8f",
-    "lora": "#e9c46a",
-    "parallel_adapter": "#e76f51",
-}
+from codetune.methods import METHODS  # noqa: E402
+
+#: One colour per registered method, assigned by registry order, so a new method
+#: gets a distinct colour instead of silently rendering grey.
+_PALETTE = ["#264653", "#2a9d8f", "#e9c46a", "#e76f51", "#8d5a97", "#4f7cac"]
+COLORS = {name: _PALETTE[i % len(_PALETTE)] for i, name in enumerate(METHODS)}
 
 
 def _scatter(ax, rows, x_key, xlabel, log_x=False):
