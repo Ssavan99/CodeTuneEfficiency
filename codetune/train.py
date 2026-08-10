@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import platform
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
@@ -99,7 +99,32 @@ def _build_model(cfg: RunConfig, device: torch.device):
     return model.to(device)
 
 
-def train_one_run(cfg: RunConfig, verbose: bool = True) -> dict:
+def train_one_run(cfg: RunConfig, verbose: bool = True, _max_oom_retries: int = 3) -> dict:
+    """Run once; on CUDA OOM, halve batch size and double grad accumulation, then retry.
+
+    The effective batch size (batch_size * grad_accum) is preserved across retries so
+    the equal-budget comparison across methods still holds — only memory footprint per
+    step shrinks.
+    """
+    for attempt in range(_max_oom_retries + 1):
+        try:
+            return _train_one_run_attempt(cfg, verbose)
+        except torch.cuda.OutOfMemoryError:
+            torch.cuda.empty_cache()
+            if attempt == _max_oom_retries or cfg.batch_size <= 1:
+                raise
+            new_batch = max(1, cfg.batch_size // 2)
+            new_accum = cfg.grad_accum * (cfg.batch_size // new_batch)
+            if verbose:
+                print(
+                    f"[{cfg.run_id()}] OOM at batch_size={cfg.batch_size}; retrying with "
+                    f"batch_size={new_batch}, grad_accum={new_accum}"
+                )
+            cfg = replace(cfg, batch_size=new_batch, grad_accum=new_accum)
+    raise RuntimeError("unreachable")  # pragma: no cover
+
+
+def _train_one_run_attempt(cfg: RunConfig, verbose: bool) -> dict:
     from transformers import AutoTokenizer, get_linear_schedule_with_warmup, set_seed
 
     set_seed(cfg.seed)
@@ -155,6 +180,14 @@ def train_one_run(cfg: RunConfig, verbose: bool = True) -> dict:
 
                 running += loss.item() * cfg.grad_accum
                 seen += 1
+            if seen % cfg.grad_accum != 0:
+                # flush a partial accumulation group left over at the end of the epoch
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(params, 1.0)
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+                optimizer.zero_grad(set_to_none=True)
             history.append({"epoch": epoch + 1, "train_loss": round(running / max(seen, 1), 5)})
             if verbose:
                 print(f"  epoch {epoch + 1}/{cfg.epochs} loss={history[-1]['train_loss']:.4f}")

@@ -101,7 +101,7 @@ implying Liu et al.'s artifact is Savan's.
       `anonymous-ase23/CodeModelParameterEfficientFinetuning` and Liu et al. ASE 2023
 - [x] 1.8 Move upstream's `README.md` → `UPSTREAM_README.md` (placeholder root README
       written in Phase 4)
-- [ ] 1.9 `/code-review` at high level on the Phase 1 diff; fix real findings
+- [x] 1.9 `/code-review` at high level on the Phase 1 diff; fix real findings
 
 **Acceptance:** `provenance/` exists with the patch + run artifacts and is < 2 MB; the
 token appears nowhere outside `.git`; `git status` shows only intended new files;
@@ -152,7 +152,7 @@ tests/          test_methods.py, test_data.py, test_cost.py, test_smoke_e2e.py
       test runs the smoke config and skips cleanly if the hub is unreachable
 - [x] 2.8 Verify `pytest` exits 0 **and** `python -m codetune run --config configs/smoke.yaml`
       completes end to end
-- [ ] 2.9 `/code-review` at high level on the Phase 2 diff; fix real findings
+- [x] 2.9 `/code-review` at high level on the Phase 2 diff; fix real findings
 
 **Acceptance:** `pytest -q` exits 0; the smoke run completes on CPU in < 3 min and writes
 a valid result JSON; `methods.py` param counts match hand-computed expectations in tests;

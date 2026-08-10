@@ -51,10 +51,10 @@ def test_bitfit_trains_only_biases_and_head():
     model = apply_method(tiny_model(), "bitfit")
     for name, param in model.named_parameters():
         is_head = "classifier" in name or "score" in name
-        if param.requires_grad:
-            assert name.endswith(".bias") or is_head, f"{name} should be frozen under bitfit"
-        else:
-            assert not name.endswith(".bias") or is_head is False
+        should_train = name.endswith(".bias") or is_head
+        assert param.requires_grad == should_train, (
+            f"{name}: requires_grad={param.requires_grad}, expected {should_train} under bitfit"
+        )
 
 
 def test_peft_methods_are_far_cheaper_than_full():
