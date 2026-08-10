@@ -169,7 +169,7 @@ no network access required by the unit tests.
 - [x] 3.2 Recalibrate the grid from 3.1's measured throughput; record the final grid here
 - [x] 3.3 **Defect (Devign)** — 4 methods × 3 seeds (42/1337/2024), equal budget, seq 320.
       Full 21 854-example train set
-- [ ] 3.4 **Clone (BigCloneBench)** — 4 methods × 3 seeds, seq 400, deterministically
+- [x] 3.4 **Clone (BigCloneBench)** — 4 methods × 3 seeds, seq 400, deterministically
       subsampled to 20 k train / 2 k val / 4 k test. **Subset size stated in the README** —
       not presented as the full benchmark
 - [ ] 3.5 Aggregate → `results/summary.csv` + mean ± std per method/task/metric
@@ -229,6 +229,7 @@ minutes and the full grid in hours, on free compute, with no manual dataset wran
 | D12 | Both tasks kept, rather than one task at larger scale | The cross-task comparison (RQ3 in the original paper) is the more interesting result, and it survives reduced scale better than a single-task absolute number does. |
 | D13 | Grid stopped mid-flight to apply review fixes, then restarted | Several review findings changed the reported numbers (LoRA's parameter denominator, wall-clock timing bias, LR schedule length). Finishing the grid first would have produced results that had to be thrown away anyway. |
 | D14 | Kill stray python processes before each GPU run | Two grids were crippled by leftover processes holding ~6 GB of the card, which looked like the GPU being slow rather than contended. Verified with `nvidia-smi --query-compute-apps`. |
+| D15 | Clone grid further resized to train=600/eval=1000 (from the originally planned 20k/2k/4k) | Same throughput constraint as D11: measured 0.40 s/example on the 1660 Ti made the original size ~9h for the clone grid alone. Documented in-line in `configs/clone.yaml` with the reasoning; cost columns (params/VRAM/wall-clock/checkpoint bytes) stay exact and scale-independent, only quality numbers are affected and are labeled accordingly. |
 
 ## 8. Blockers
 
