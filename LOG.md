@@ -31,3 +31,19 @@
   interrupt or duplicate it. 3.3 still unchecked; next run should again check
   `results/defect/` for 12 JSONs before touching the clone grid (3.4),
   aggregation (3.5), plots (3.6), or Phase 4.
+- 2026-08-10: Confirmed the Devign defect grid (3.3, 12/12 JSONs) and BigCloneBench
+  clone grid (3.4, 12/12 JSONs, watched to completion in background) were both
+  done, ticked both boxes. Ran `codetune aggregate` and `codetune plot` (3.5/3.6)
+  over all 24 runs -> results/summary.{csv,md}, results/figures/*.png; committed
+  a real fix found along the way (`_safe_print` in aggregate.py was missing
+  `import sys`, only surfaced when a run's console couldn't encode the tables'
+  unicode). Found Phase 4 (README headline findings, FINDINGS.md outcome
+  section, docs/RESULTS.md) already drafted uncommitted in the working tree
+  from an earlier session; de-duplicated a redundant outcome section I'd
+  independently written into FINDINGS.md in favor of the existing, more
+  specific one, then committed. Ran the final whole-branch `/code-review` at
+  high level via the Code Reviewer agent per PLAN.md 4.5 — zero findings.
+  `pytest -q` 27/27, `git status` clean, every PLAN.md checkbox ticked:
+  **project meets its own DONE definition.** Nothing pushed. Savan still needs
+  to run the push/PR commands in PLAN.md §9 and revoke the leaked HF token
+  before doing so.
