@@ -9,3 +9,14 @@
   the background on the local GTX 1660 Ti — still running at end of session.
   Clone grid (3.4), aggregation (3.5), plots (3.6), and Phase 3 review (3.7)
   not yet started; Phase 4 reporting not yet started.
+- 2026-08-10: Found the Phase 3 Devign grid still running from the prior
+  session (GPU at 100%, 5.97/6 GB used, healthy) and left it alone rather than
+  interrupting in-progress training. Found and reviewed a set of uncommitted
+  working-tree edits from that session (near-collapse detection instead of
+  exact-uniformity, a fixed pristine-param-count denominator so trainable-
+  fraction is comparable across methods, pinned host buffers for real async
+  CUDA transfers, epochs 2->3 in defect.yaml/clone.yaml); `pytest -q` passed
+  28/28, so committed as `9c30ebe`. Did not start the clone grid (3.4) or any
+  other GPU work to avoid contending with the running defect grid on a 6 GB
+  card. 3.3 remains unchecked — the next run should check whether
+  `results/defect/` has all 12 run JSONs before starting anything else.
