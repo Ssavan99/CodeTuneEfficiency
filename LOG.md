@@ -47,3 +47,8 @@
   **project meets its own DONE definition.** Nothing pushed. Savan still needs
   to run the push/PR commands in PLAN.md §9 and revoke the leaked HF token
   before doing so.
+- 2026-08-10: Overnight scheduled run. Re-verified prior session's DONE claim:
+  all PLAN.md checkboxes ticked, `git status` clean, `pytest -q` 28/28 passing
+  (via `.venv`, not system Python — system Python lacks torch). No unchecked
+  work remains. Nothing to do this run; still waiting on Savan to run the
+  push/PR commands in PLAN.md §9 and revoke the leaked HF token first.
