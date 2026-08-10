@@ -167,7 +167,7 @@ no network access required by the unit tests.
 - [x] 3.1 Sanity run: 1 method × 1 seed × 1 epoch on Devign on the local GPU; confirm it
       fits in 6 GB and record the real minutes/epoch
 - [x] 3.2 Recalibrate the grid from 3.1's measured throughput; record the final grid here
-- [ ] 3.3 **Defect (Devign)** — 4 methods × 3 seeds (42/1337/2024), equal budget, seq 320.
+- [x] 3.3 **Defect (Devign)** — 4 methods × 3 seeds (42/1337/2024), equal budget, seq 320.
       Full 21 854-example train set
 - [ ] 3.4 **Clone (BigCloneBench)** — 4 methods × 3 seeds, seq 400, deterministically
       subsampled to 20 k train / 2 k val / 4 k test. **Subset size stated in the README** —
