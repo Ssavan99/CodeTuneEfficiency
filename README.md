@@ -7,22 +7,33 @@ on two CodeXGLUE code-understanding tasks. Every method gets an identical budget
 number is averaged over three seeds with its spread reported, and — unlike most write-ups
 of this comparison — **the cost side of the trade-off is measured, not asserted**.
 
-It runs end to end on a single 6 GB consumer GPU. There is also a
-[notebook](notebooks/run_on_free_gpu.ipynb) for Colab's free T4 or Kaggle's free weekly
-GPU hours, so anyone can reproduce it without paying for compute.
+Everything below was produced on a **free Colab T4** —
+[one notebook](notebooks/run_on_free_gpu.ipynb), no paid compute, and the configs in this
+repo are the ones that generated it.
 
 **Headline findings** (full discussion in [docs/RESULTS.md](docs/RESULTS.md)):
 
-- **PEFT's storage win is enormous and real** — a per-task BitFit checkpoint is 2.65 MB
-  against full fine-tuning's 475.49 MB, **179× smaller**. Training is ~33% faster.
-- **PEFT saves no GPU memory.** Freezing 99.4% of parameters changed peak VRAM by 0 MB;
-  LoRA and parallel adapters used 26 MB *more*. Activations dominate at these batch sizes,
-  and freezing weights does not shrink activations. If you want a model to fit on a smaller
-  card, this is the wrong tool.
-- **At the budget this hardware allows, quality does not separate the methods.** On Devign
-  all four land on the 54.1% majority-class baseline and 8 of 12 runs collapsed to a single
-  predicted class. On BigCloneBench only full fine-tuning never collapsed. Reported as a
-  negative result rather than dressed up as a ranking.
+- **PEFT's storage win is enormous.** A per-task BitFit checkpoint is 2.65 MB against full
+  fine-tuning's 475.49 MB — **179× smaller** — and training runs 17–25% faster.
+- **The memory saving is real but far smaller than the parameter ratio implies.** Peak
+  *allocated* memory fell 26–35% (6,829 MB → 4,460–5,040 MB) as gradients and Adam state for
+  125 M parameters went away. But peak *reserved* memory — what the process actually holds
+  from the driver — was flat, 7,374 MB against 7,502–7,508 MB. Activations dominate, and
+  freezing weights does not shrink activations. A 140× cut in trainable parameters bought a
+  ~30% cut in allocated memory and no reduction in footprint here.
+- **The method ordering is identical on both tasks** — `full` > `parallel_adapter` >
+  `lora` > `bitfit` — and every gap exceeds the seed spread. On clone detection
+  `parallel_adapter` is 1.1 accuracy points behind full fine-tuning while training 0.72% of
+  the parameters.
+- **Accuracy hides the defect-detection gap.** Positive-class F1 is 54.59 for full
+  fine-tuning against 17–19 for LoRA and BitFit, which answer "not vulnerable" ~94.5% of the
+  time. Read positive F1: 86.4% of clone test pairs are negative, so accuracy alone flatters
+  everything.
+- **A result from the 2024 paper does not reproduce, and that is the point.** Its LoRA
+  defect row (precision 0.2828, recall exactly 0.5000) was a collapsed run published as a
+  finding about LoRA. Here LoRA reaches 58.27 ± 0.42 across three seeds. Meanwhile full
+  fine-tuning replicates cleanly: **64.33** here against 65.08 in the paper and 64.92 in
+  Liu et al.
 
 <!-- RESULTS:START -->
 
@@ -30,7 +41,7 @@ GPU hours, so anyone can reproduce it without paying for compute.
 
 ### clone — 20,000 train / 1,000 test, 2 epochs
 
-| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | Peak VRAM | Train time |
+| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | VRAM (reserved) | Train time |
 |---|---|---|---|---|---|---|---|---|
 | `full` | 3 | 93.37 ± 0.91 | 86.77 ± 1.76 | 77.42 ± 2.99 | 100.000% (124,647,170) | 475.49 MB | 7,374 MB | 11.2 min |
 | `bitfit` | 3 | 89.20 ± 0.62 | 80.25 ± 0.61 | 66.95 ± 0.85 | 0.560% (694,274) | 2.65 MB | 7,502 MB | 8.8 min |
@@ -39,7 +50,7 @@ GPU hours, so anyone can reproduce it without paying for compute.
 
 ### defect — 21,854 train / 1,000 test, 2 epochs
 
-| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | Peak VRAM | Train time |
+| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | VRAM (reserved) | Train time |
 |---|---|---|---|---|---|---|---|---|
 | `full` | 3 | 64.33 ± 1.37 | 62.61 ± 1.64 | 54.59 ± 2.50 | 100.000% (124,647,170) | 475.49 MB | 7,374 MB | 12.1 min |
 | `bitfit` | 3 | 57.67 ± 0.67 | 44.42 ± 1.39 | 17.29 ± 2.49 | 0.560% (694,274) | 2.65 MB | 7,502 MB | 9.4 min |
@@ -66,9 +77,11 @@ original Slurm logs and metric dumps.
 **This repository is the 2026 rebuild of that project**: a clean, self-contained
 implementation under [`codetune/`](codetune/) that anyone can run, with the experimental
 design tightened and the efficiency measurements added. The original study was a
-scoped-down replication of Liu et al. run on a 32 GB V100; this is a smaller, sharper,
-fully reproducible version of the same question that fits on hardware people actually own.
-[`provenance/README.md`](provenance/README.md) documents what changed and why.
+scoped-down replication of Liu et al. run on a 32 GB V100; this reruns the same question on
+free compute, with equal budgets, three seeds, collapse detection and a full cost accounting
+— and reproduces the original's full-fine-tuning numbers while showing that one of its PEFT
+rows was a training failure. [`provenance/README.md`](provenance/README.md) documents what
+changed and why.
 
 ## The four methods
 
@@ -89,7 +102,8 @@ property [asserted in the tests](tests/test_methods.py).
 Four cost numbers accompany every accuracy number:
 
 - **trainable parameters** — what the optimizer updates
-- **peak GPU memory** — whether it fits on the card you own
+- **peak GPU memory** — both allocated (what tensors need) and reserved (what the process
+  holds from the driver); the two tell different stories and both are recorded
 - **wall-clock training time** — what a run costs
 - **delta checkpoint size** — bytes you must store and ship *per task*, counting only the
   trainable tensors
@@ -98,9 +112,11 @@ That last one is the honest form of PEFT's storage claim. Saving a full model pe
 which is the default behaviour of most training scripts, throws the saving away entirely.
 
 Reported quality metrics are accuracy, macro precision/recall/F1, and positive-class F1.
-Both macro **and** positive-class F1 appear because the pair identifies a collapsed run at
-a glance: a classifier that predicts one class for every input scores exactly 0.50 macro
-recall and 0.00 positive F1. Runs that collapse are flagged rather than quietly averaged in.
+Positive-class F1 carries most of the signal here: 86.4% of BigCloneBench test pairs are
+negative, so accuracy alone flatters every method. The pair also identifies a degenerate run
+at a glance — a classifier predicting one class for every input scores exactly 0.50 macro
+recall and 0.00 positive F1. Runs whose majority-class rate reaches 99% are flagged rather
+than quietly averaged in. None of the runs reported here triggered that flag.
 
 ## Quickstart
 
@@ -165,12 +181,14 @@ datasets or the base model are unavailable.
 measures the schedule, not the method. Early stopping is disabled for the same reason: it
 silently hands more optimisation to whichever method happens to keep improving.
 
-**Scale is reduced and stated, not hidden.** Both tasks are subsampled to 600 training
-examples to fit a $0 compute budget on a 6 GB card that thermally throttles under sustained
-load. The exact sizes are in the configs and recorded in every result JSON. A result anyone
-can verify is worth more than a larger number nobody can re-run — but see
-[docs/RESULTS.md](docs/RESULTS.md) for what that budget can and cannot support: the cost
-measurements are exact at any scale, the quality measurements are not.
+**Scale is stated, not hidden.** Devign runs on its full 21,854-example training set.
+BigCloneBench is subsampled to 20,000 of 901,028 pairs, and both test splits to 1,000, so
+all 24 runs fit inside one free Colab session. Every size is recorded in every result JSON,
+and the configs that produced the published tables are the ones in this repo.
+
+**Hardware.** The tables come from a free Colab T4 (16 GB). The test suite and the CPU smoke
+config run anywhere; the full grid does not fit in 6 GB at these settings — see the note at
+the top of `configs/defect.yaml` for smaller-card values.
 
 ## Layout
 

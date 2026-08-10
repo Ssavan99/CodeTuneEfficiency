@@ -1,36 +1,26 @@
 # BigCloneBench clone detection (Java).
 #
-# SCALE IS SET BY MEASUREMENT, NOT PREFERENCE.
-# Development GPU: GTX 1660 Ti, 6 GB. Turing GTX - no tensor cores, so fp16 buys
-# almost nothing - and it thermally throttles to ~88 C under sustained load.
-# Measured 0.40 s per training example for full fine-tuning: one epoch over
-# 1,500 examples took 10 minutes. A 24-run grid at that size is ~9 hours, so the
-# sizes below are cut to what completes in a few hours on this hardware.
+# Settings that produced the committed results, on a free Colab T4. See
+# notebooks/run_on_free_gpu.ipynb.
 #
-# WHAT THIS MEANS FOR THE NUMBERS. The cost columns (trainable parameters, delta
-# checkpoint size, peak VRAM, wall-clock) are exact and scale-independent - they
-# are the point of this benchmark. The quality columns are trained on very
-# little data and should be read as a controlled comparison under an identical
-# budget, not as any method's ceiling. Runs that collapse to one predicted class
-# are flagged rather than averaged in silently.
+# Train subsampled to 20,000 of 901,028 pairs and test to 1,000 of 415,416 -
+# deterministic and label-stratified per seed, sizes recorded in every result
+# JSON. The full split is far larger than one free session allows.
 #
-# For quality numbers at a scale where they mean more, run the same grid on a
-# free Colab or Kaggle T4 (16 GB, tensor cores) via
-# notebooks/run_on_free_gpu.ipynb, which raises these values substantially.
+# NOTE ON THE BASELINE: only ~13.6% of test pairs are clones, so the
+# majority-class accuracy is 86.4%. Read positive-class F1, not accuracy.
 #
-# Pair-shaped: two functions share one 128-token window, so truncation bites
-# harder here than for defect detection at the same length. Train subsampled to
-# 600, test to 1,000; deterministic and label-stratified per seed.
+# ON A SMALLER CARD: see the note in configs/defect.yaml.
 task: clone
+limit_train: 20000
 epochs: 2
 lr: 5.0e-5        # full fine-tuning
 peft_lr: 1.0e-4   # PEFT methods, as in the original study
-batch_size: 16
-grad_accum: 2
-max_length: 128
+batch_size: 32
+grad_accum: 1
+max_length: 256
 weight_decay: 0.01
 warmup_ratio: 0.06
 fp16: true
-limit_train: 600
 limit_eval: 1000
 output_dir: results

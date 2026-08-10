@@ -107,7 +107,7 @@ def to_markdown(rows: list[dict]) -> str:
                    f"{head['epochs']} epochs\n")
         out.append(
             "| Method | Seeds | Accuracy | Macro F1 | Positive F1 "
-            "| Trainable | Delta ckpt | Peak VRAM | Train time |"
+            "| Trainable | Delta ckpt | VRAM (reserved) | Train time |"
         )
         out.append("|---|---|---|---|---|---|---|---|---|")
         for r in task_rows:

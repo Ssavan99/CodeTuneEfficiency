@@ -51,7 +51,7 @@ def make_plots(results_dir: str | Path = "results") -> list[Path]:
         # 1. Accuracy against the two cost axes that matter when choosing a method.
         fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
         _scatter(axes[0], task_rows, "trainable_params", "Trainable parameters (log)", log_x=True)
-        _scatter(axes[1], task_rows, "peak_memory_mb", "Peak GPU memory (MB)")
+        _scatter(axes[1], task_rows, "peak_memory_mb", "Peak GPU memory allocated (MB)")
         fig.suptitle(f"{task}: quality vs. cost", fontsize=13)
         fig.tight_layout()
         path = fig_dir / f"{task}_quality_vs_cost.png"

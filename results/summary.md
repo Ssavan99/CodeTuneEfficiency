@@ -1,6 +1,6 @@
 ### clone — 20,000 train / 1,000 test, 2 epochs
 
-| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | Peak VRAM | Train time |
+| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | VRAM (reserved) | Train time |
 |---|---|---|---|---|---|---|---|---|
 | `full` | 3 | 93.37 ± 0.91 | 86.77 ± 1.76 | 77.42 ± 2.99 | 100.000% (124,647,170) | 475.49 MB | 7,374 MB | 11.2 min |
 | `bitfit` | 3 | 89.20 ± 0.62 | 80.25 ± 0.61 | 66.95 ± 0.85 | 0.560% (694,274) | 2.65 MB | 7,502 MB | 8.8 min |
@@ -9,7 +9,7 @@
 
 ### defect — 21,854 train / 1,000 test, 2 epochs
 
-| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | Peak VRAM | Train time |
+| Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | VRAM (reserved) | Train time |
 |---|---|---|---|---|---|---|---|---|
 | `full` | 3 | 64.33 ± 1.37 | 62.61 ± 1.64 | 54.59 ± 2.50 | 100.000% (124,647,170) | 475.49 MB | 7,374 MB | 12.1 min |
 | `bitfit` | 3 | 57.67 ± 0.67 | 44.42 ± 1.39 | 17.29 ± 2.49 | 0.560% (694,274) | 2.65 MB | 7,502 MB | 9.4 min |
