@@ -175,7 +175,7 @@ no network access required by the unit tests.
 - [ ] 3.5 Aggregate → `results/summary.csv` + mean ± std per method/task/metric
 - [ ] 3.6 Plots → `results/figures/` (accuracy-vs-trainable-params, accuracy-vs-peak-VRAM,
       per-method bars with error bars)
-- [ ] 3.7 `/code-review` at high level on the Phase 3 diff; fix real findings
+- [x] 3.7 `/code-review` at high level on the Phase 3 diff; fix real findings
 
 **Acceptance:** ≥ 24 completed runs with committed per-run JSONs; `summary.csv` reproduces
 from those JSONs via `python -m codetune aggregate`; every reported number carries a
@@ -195,10 +195,10 @@ fallback: cut to 2 seeds and note it here.
       Master's project + 2026 rebuild), quickstart, results tables with error bars, the
       figures, and an explicit "how this differs from the 2024 paper" section covering all
       six defects and how each was addressed
-- [ ] 4.2 A short `docs/RESULTS.md` interpreting the findings — including any case where
+- [x] 4.2 A short `docs/RESULTS.md` interpreting the findings — including any case where
       the rebuild *disagrees* with the paper, stated plainly
 - [ ] 4.3 Update FINDINGS.md with the rebuild's outcome
-- [ ] 4.4 Repo metadata note for Savan (description + topics to set on GitHub — the audit
+- [x] 4.4 Repo metadata note for Savan (description + topics to set on GitHub — the audit
       flags these as missing across the account)
 - [ ] 4.5 Final `/code-review` at high level over the whole branch; fix real findings
 - [ ] 4.6 Confirm DONE: `pytest` exits 0, end-to-end run works, `git status` clean,
@@ -227,8 +227,16 @@ minutes and the full grid in hours, on free compute, with no manual dataset wran
 | D10 | Token scrubbed from working tree; Savan told to revoke it | It is not in git history, so no history surgery is needed |
 | D11 | Grid resized after a timing probe: 2 500 train, 2 epochs, seq 128 | Measured 0.25 s/example on the 1660 Ti. Turing GTX cards have no tensor cores, so fp16 barely helps and the originally planned grid would have taken ~24 h. The reduced sizes are disclosed in the configs and recorded in every result JSON. |
 | D12 | Both tasks kept, rather than one task at larger scale | The cross-task comparison (RQ3 in the original paper) is the more interesting result, and it survives reduced scale better than a single-task absolute number does. |
+| D13 | Grid stopped mid-flight to apply review fixes, then restarted | Several review findings changed the reported numbers (LoRA's parameter denominator, wall-clock timing bias, LR schedule length). Finishing the grid first would have produced results that had to be thrown away anyway. |
+| D14 | Kill stray python processes before each GPU run | Two grids were crippled by leftover processes holding ~6 GB of the card, which looked like the GPU being slow rather than contended. Verified with `nvidia-smi --query-compute-apps`. |
 
 ## 8. Blockers
+
+**B2 — stale processes silently saturate the 6 GB card (resolved).** Two grid attempts
+crawled because leftover python processes from earlier probes held ~6 GB of VRAM; the
+symptom was a 4x apparent slowdown, not an error. Fixed by killing all python before a
+GPU run and confirming `nvidia-smi --query-gpu=memory.used` reads 0 MiB first. If a run
+ever looks inexplicably slow, check this before touching the config.
 
 **B1 — local GPU is the binding constraint (open, worked around, not escalated).**
 The development card is a GTX 1660 Ti: 6 GB, Turing, and crucially *no tensor cores*, so
