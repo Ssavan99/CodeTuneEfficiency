@@ -7,14 +7,14 @@
     "epochs": 2,
     "lr": 5e-05,
     "peft_lr": 0.0001,
-    "batch_size": 16,
-    "grad_accum": 2,
-    "max_length": 128,
+    "batch_size": 32,
+    "grad_accum": 1,
+    "max_length": 256,
     "weight_decay": 0.01,
     "warmup_ratio": 0.06,
     "fp16": true,
     "device": "auto",
-    "limit_train": 600,
+    "limit_train": 20000,
     "limit_eval": 1000,
     "model_name": "microsoft/codebert-base",
     "output_dir": "results",
@@ -26,9 +26,9 @@
     "train": {
       "split": "train",
       "n_available": 901028,
-      "n_used": 600,
+      "n_used": 20000,
       "subsampled": true,
-      "positive_rate": 0.5017
+      "positive_rate": 0.5004
     },
     "test": {
       "split": "test",
@@ -39,13 +39,13 @@
     }
   },
   "metrics": {
-    "accuracy": 0.181,
-    "macro_precision": 0.5316861408633561,
-    "macro_recall": 0.513211425091558,
-    "macro_f1": 0.17503966155473294,
-    "positive_f1": 0.24516129032258063,
-    "predicted_positive_rate": 0.948,
-    "majority_class_rate": 0.948,
+    "accuracy": 0.885,
+    "macro_precision": 0.7618854074293033,
+    "macro_recall": 0.8596857000279114,
+    "macro_f1": 0.796718865726624,
+    "positive_f1": 0.6627565982404692,
+    "predicted_positive_rate": 0.204,
+    "majority_class_rate": 0.796,
     "collapsed": false
   },
   "cost": {
@@ -53,30 +53,30 @@
     "total_params": 124647170,
     "live_total_params": 124647170,
     "trainable_pct": 0.557,
-    "seconds": 116.96,
-    "peak_memory_bytes": 1518097920,
-    "peak_memory_mb": 1447.8,
-    "peak_reserved_bytes": 3598712832,
-    "peak_reserved_mb": 3432.0,
+    "seconds": 527.54,
+    "peak_memory_bytes": 4882853888,
+    "peak_memory_mb": 4656.7,
+    "peak_reserved_bytes": 7866417152,
+    "peak_reserved_mb": 7502.0,
     "delta_checkpoint_bytes": 2777096,
     "delta_checkpoint_mb": 2.65
   },
   "history": [
     {
       "epoch": 1,
-      "train_loss": 0.69458
+      "train_loss": 0.53823
     },
     {
       "epoch": 2,
-      "train_loss": 0.69238
+      "train_loss": 0.3864
     }
   ],
   "environment": {
     "device": "cuda",
-    "gpu": "NVIDIA GeForce GTX 1660 Ti",
-    "torch": "2.4.1+cu121",
-    "python": "3.10.1",
-    "platform": "Windows-10-10.0.26200-SP0",
+    "gpu": "Tesla T4",
+    "torch": "2.11.0+cu128",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
     "fp16": true
   }
 }

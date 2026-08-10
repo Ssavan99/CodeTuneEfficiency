@@ -1,21 +1,17 @@
-### clone — 600 train / 1,000 test, 2 epochs
+### clone — 20,000 train / 1,000 test, 2 epochs
 
 | Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | Peak VRAM | Train time |
 |---|---|---|---|---|---|---|---|---|
-| `full` | 3 | 62.37 ± 15.58 | 53.21 ± 9.81 | 34.09 ± 3.78 | 100.000% (124,647,170) | 475.49 MB | 3,432 MB | 2.9 min |
-| `bitfit` ⚠️ | 3 | 19.37 ± 5.80 | 18.68 ± 6.50 | 24.89 ± 1.04 | 0.560% (694,274) | 2.65 MB | 3,432 MB | 1.9 min |
-| `lora` ⚠️ | 3 | 64.27 ± 38.77 | 38.48 ± 16.91 | 10.69 ± 12.87 | 0.710% (887,042) | 3.38 MB | 3,458 MB | 2.0 min |
-| `parallel_adapter` ⚠️ | 3 | 72.27 ± 12.59 | 52.75 ± 4.98 | 23.72 ± 18.32 | 0.720% (896,450) | 3.42 MB | 3,458 MB | 1.9 min |
+| `full` | 3 | 93.37 ± 0.91 | 86.77 ± 1.76 | 77.42 ± 2.99 | 100.000% (124,647,170) | 475.49 MB | 7,374 MB | 11.2 min |
+| `bitfit` | 3 | 89.20 ± 0.62 | 80.25 ± 0.61 | 66.95 ± 0.85 | 0.560% (694,274) | 2.65 MB | 7,502 MB | 8.8 min |
+| `lora` | 3 | 91.73 ± 0.81 | 84.06 ± 1.39 | 73.00 ± 2.31 | 0.710% (887,042) | 3.38 MB | 7,508 MB | 9.3 min |
+| `parallel_adapter` | 3 | 92.27 ± 0.64 | 84.96 ± 1.39 | 74.48 ± 2.42 | 0.720% (896,450) | 3.42 MB | 7,508 MB | 8.5 min |
 
-⚠️ = at least one seed predicted a single class for ≥99% of inputs, which is a training failure rather than a result about the method.
-
-### defect — 600 train / 1,000 test, 2 epochs
+### defect — 21,854 train / 1,000 test, 2 epochs
 
 | Method | Seeds | Accuracy | Macro F1 | Positive F1 | Trainable | Delta ckpt | Peak VRAM | Train time |
 |---|---|---|---|---|---|---|---|---|
-| `full` ⚠️ | 3 | 54.57 ± 0.61 | 37.32 ± 1.51 | 4.44 ± 2.91 | 100.000% (124,647,170) | 475.49 MB | 3,432 MB | 2.9 min |
-| `bitfit` ⚠️ | 3 | 54.10 ± 0.00 | 35.49 ± 0.67 | 0.85 ± 1.47 | 0.560% (694,274) | 2.65 MB | 3,432 MB | 2.0 min |
-| `lora` ⚠️ | 3 | 54.13 ± 0.06 | 35.82 ± 1.03 | 1.54 ± 2.30 | 0.710% (887,042) | 3.38 MB | 3,458 MB | 2.0 min |
-| `parallel_adapter` ⚠️ | 3 | 54.10 ± 0.10 | 35.17 ± 0.15 | 0.14 ± 0.25 | 0.720% (896,450) | 3.42 MB | 3,458 MB | 1.9 min |
-
-⚠️ = at least one seed predicted a single class for ≥99% of inputs, which is a training failure rather than a result about the method.
+| `full` | 3 | 64.33 ± 1.37 | 62.61 ± 1.64 | 54.59 ± 2.50 | 100.000% (124,647,170) | 475.49 MB | 7,374 MB | 12.1 min |
+| `bitfit` | 3 | 57.67 ± 0.67 | 44.42 ± 1.39 | 17.29 ± 2.49 | 0.560% (694,274) | 2.65 MB | 7,502 MB | 9.4 min |
+| `lora` | 3 | 58.27 ± 0.42 | 45.41 ± 0.21 | 18.91 ± 0.13 | 0.710% (887,042) | 3.38 MB | 7,508 MB | 10.0 min |
+| `parallel_adapter` | 3 | 59.00 ± 0.70 | 51.74 ± 2.97 | 33.11 ± 6.46 | 0.720% (896,450) | 3.42 MB | 7,508 MB | 9.1 min |
