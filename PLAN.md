@@ -1,7 +1,8 @@
 # PLAN — CodeTuneEfficiency rebuild
 
 **Branch:** `feat/peft-code-benchmark` · **Created:** 2026-08-10 · **Verdict:** B (see [FINDINGS.md](FINDINGS.md))
-**Approval status:** ⬜ AWAITING APPROVAL — do not start Phase 1 until Savan approves.
+**Approval status:** ✅ APPROVED 2026-08-10 — verdict B, with the softened public framing
+(six-defect autopsy lives in `provenance/README.md`, not the front-page README).
 
 ---
 
@@ -68,7 +69,7 @@ passes with no GPU at all.
 - [x] Commit to one verdict → **B**
 - [x] Write `FINDINGS.md`
 - [x] Write `PLAN.md` (this file)
-- [ ] **Savan approves this plan** ← the one and only approval gate
+- [x] **Savan approves this plan** ← the one and only approval gate
 
 **Compute:** none. Read-only.
 
@@ -79,26 +80,26 @@ passes with no GPU at all.
 Preserve the 2024 work as evidence, make the tree safe to commit, and stop the repo from
 implying Liu et al.'s artifact is Savan's.
 
-- [ ] 1.1 Capture the uncommitted 2024 edits as `provenance/original-2024-edits.patch`
+- [x] 1.1 Capture the uncommitted 2024 edits as `provenance/original-2024-edits.patch`
       (`git diff` + the two untracked `run-bitfit.sh` files), **with the HF token
       redacted** before it is written to disk
-- [ ] 1.2 Extract only the small text artifacts from `defect.zip` into
+- [x] 1.2 Extract only the small text artifacts from `defect.zip` into
       `provenance/original-runs/` — `all_results.json`, `test_results.json`,
       `trainer_state.json` per run, and the four `slurm-*.out` logs. **No checkpoints.**
       Target < 2 MB total. Read via `zipfile` member-by-member; never bulk-extract.
-- [ ] 1.3 Write `provenance/README.md`: what the 2024 run was, on what hardware, and the
+- [x] 1.3 Write `provenance/README.md`: what the 2024 run was, on what hardware, and the
       six defects from FINDINGS §2 with a pointer to the JSON that evidences each
-- [ ] 1.4 Add `.gitignore` — datasets (`**/dataset/`, `*.jsonl`, `*.zip`), checkpoints
+- [x] 1.4 Add `.gitignore` — datasets (`**/dataset/`, `*.jsonl`, `*.zip`), checkpoints
       (`checkpoints/`, `*.safetensors`, `*.bin`, `*.pt`), `hf_cache/`, `.venv/`,
       `__pycache__/`, `wandb/`, `results/**/raw/`
-- [ ] 1.5 Scrub the leaked HF token from the working tree (4 × `run.py`). Verify
+- [x] 1.5 Scrub the leaked HF token from the working tree (4 × `run.py`). Verify
       `grep -rI 'hf_fsYPFq' --exclude-dir=.git .` returns nothing before any commit
-- [ ] 1.6 Restore the upstream tree to pristine (`git restore` the modified/deleted
+- [x] 1.6 Restore the upstream tree to pristine (`git restore` the modified/deleted
       upstream files) so the diff on this branch is *only* new work. The 2024 edits
       survive in the patch from 1.1 — nothing is lost, and no history is rewritten
-- [ ] 1.7 Add `LICENSE` (MIT, as upstream's README asserts) and `THIRD_PARTY.md` crediting
+- [x] 1.7 Add `LICENSE` (MIT, as upstream's README asserts) and `THIRD_PARTY.md` crediting
       `anonymous-ase23/CodeModelParameterEfficientFinetuning` and Liu et al. ASE 2023
-- [ ] 1.8 Move upstream's `README.md` → `UPSTREAM_README.md` (placeholder root README
+- [x] 1.8 Move upstream's `README.md` → `UPSTREAM_README.md` (placeholder root README
       written in Phase 4)
 - [ ] 1.9 `/code-review` at high level on the Phase 1 diff; fix real findings
 
@@ -127,26 +128,26 @@ configs/        smoke.yaml, defect.yaml, clone.yaml
 tests/          test_methods.py, test_data.py, test_cost.py, test_smoke_e2e.py
 ```
 
-- [ ] 2.1 `requirements.txt` + `requirements-dev.txt`, pinned. Python 3.10
+- [x] 2.1 `requirements.txt` + `requirements-dev.txt`, pinned. Python 3.10
       (`C:\Program Files\Python310`), `.venv` in repo root, torch cu121 (Turing sm_75,
       fp16 — no bf16 on this card)
-- [ ] 2.2 `data.py` — load `google/code_x_glue_cc_defect_detection` (Devign) and
+- [x] 2.2 `data.py` — load `google/code_x_glue_cc_defect_detection` (Devign) and
       `google/code_x_glue_cc_clone_detection_big_clone_bench` from the HF hub. Both public,
       no auth, no gdown. Deterministic seeded subsampling with the subset size recorded in
       every result file
-- [ ] 2.3 `methods.py` — `full` (all trainable); `bitfit` (only `*.bias` + classifier);
+- [x] 2.3 `methods.py` — `full` (all trainable); `bitfit` (only `*.bias` + classifier);
       `lora` (via `peft`, r=8 α=16 on query/value); `parallel_adapter` (custom bottleneck
       MLP parallel to each layer's FFN, dim 16, per He et al.'s unified view — the
       formulation the paper cites). Every method returns the same interface and a verified
       trainable-parameter count
-- [ ] 2.4 `cost.py` — trainable/total params, `torch.cuda.max_memory_allocated`, train
+- [x] 2.4 `cost.py` — trainable/total params, `torch.cuda.max_memory_allocated`, train
       wall-clock, and **bytes of the trainable-only state dict** (the number the original
       artifacts never produced)
-- [ ] 2.5 `train.py` — HF `Trainer`, fp16, seeded, fixed equal budget across methods,
+- [x] 2.5 `train.py` — HF `Trainer`, fp16, seeded, fixed equal budget across methods,
       early stopping off (equal budget is the point), OOM auto-fallback halving batch size
       and doubling grad accumulation. Writes one self-describing JSON per run
-- [ ] 2.6 `configs/smoke.yaml` — CPU, 64 train / 32 eval, 1 epoch, seq 128, under 3 min
-- [ ] 2.7 Tests: unit tests build a *tiny random* Roberta locally (no download, offline,
+- [x] 2.6 `configs/smoke.yaml` — CPU, 64 train / 32 eval, 1 epoch, seq 128, under 3 min
+- [x] 2.7 Tests: unit tests build a *tiny random* Roberta locally (no download, offline,
       fast) to assert freezing correctness and param accounting per method; one end-to-end
       test runs the smoke config and skips cleanly if the hub is unreachable
 - [ ] 2.8 Verify `pytest` exits 0 **and** `python -m codetune run --config configs/smoke.yaml`
