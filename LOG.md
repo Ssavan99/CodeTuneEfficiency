@@ -66,3 +66,7 @@
   `.venv` 28/28 passing, `git status` clean on `feat/peft-code-benchmark`, all
   PLAN.md checkboxes ticked. No unchecked work remains. Still waiting on Savan
   to revoke the leaked HF token and run the push/PR commands in PLAN.md §9.
+- 2026-08-10: Overnight scheduled run. Re-verified once more: `pytest -q` via
+  `.venv` 28/28 passing, `git status` clean on `feat/peft-code-benchmark`, all
+  PLAN.md checkboxes ticked. Nothing to do — still waiting on Savan to revoke
+  the leaked HF token and run the push/PR commands in PLAN.md §9.
