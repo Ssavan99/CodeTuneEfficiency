@@ -106,17 +106,44 @@ def to_markdown(rows: list[dict]) -> str:
     return "\n".join(out)
 
 
+README_START = "<!-- RESULTS:START -->"
+README_END = "<!-- RESULTS:END -->"
+
+
+def update_readme(markdown: str, readme: Path) -> bool:
+    """Splice the results tables into README.md between its marker comments.
+
+    Keeps the headline numbers in the README generated rather than hand-copied,
+    so they cannot drift away from what is actually in results/.
+    """
+    if not readme.exists():
+        return False
+    text = readme.read_text(encoding="utf-8")
+    start, end = text.find(README_START), text.find(README_END)
+    if start == -1 or end == -1:
+        return False
+    block = f"{README_START}\n\n## Results\n\n{markdown}\n{README_END}"
+    readme.write_text(text[:start] + block + text[end + len(README_END):], encoding="utf-8")
+    return True
+
+
 def write_summary(results_dir: str | Path = "results") -> list[dict]:
     results_dir = Path(results_dir)
     runs = load_runs(results_dir)
     if not runs:
         raise SystemExit(f"no result JSONs found under {results_dir}/ — run some experiments first")
     rows = summarize(runs)
+    markdown = to_markdown(rows)
 
     import pandas as pd
 
     pd.DataFrame(rows).to_csv(results_dir / "summary.csv", index=False)
-    (results_dir / "summary.md").write_text(to_markdown(rows), encoding="utf-8")
+    (results_dir / "summary.md").write_text(markdown, encoding="utf-8")
     print(f"[aggregate] {len(runs)} runs -> {results_dir}/summary.csv, {results_dir}/summary.md")
-    print(to_markdown(rows))
+
+    readme = Path(__file__).resolve().parent.parent / "README.md"
+    if update_readme(markdown, readme):
+        print(f"[aggregate] refreshed the results section of {readme.name}")
+
+    print(markdown)
     return rows
