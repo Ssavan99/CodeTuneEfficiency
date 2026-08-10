@@ -1,0 +1,48 @@
+# --- datasets (downloaded on demand, never committed) ---
+**/dataset/
+**/datasets/
+*.jsonl
+*.zip
+*.tar.gz
+
+# --- model weights & training state ---
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+!**/my-languages.so
+
+# --- caches ---
+hf_cache/
+.cache/
+**/hf_model/
+wandb/
+runs/
+
+# --- python ---
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- results: keep the JSON/CSV/figures, drop raw dumps ---
+results/**/raw/
+*.log
+slurm-*.out
+!provenance/original-runs/slurm-*.out
+
+# --- os / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# local-only task dirs (not part of upstream, hold ~1GB of downloaded data)
+/clone-POJ-104/
+/NL_code_search_adv/
