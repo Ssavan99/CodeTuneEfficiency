@@ -29,11 +29,8 @@ repo are the ones that generated it.
   fine-tuning against 17–19 for LoRA and BitFit, which answer "not vulnerable" ~94.5% of the
   time. Read positive F1: 86.4% of clone test pairs are negative, so accuracy alone flatters
   everything.
-- **A result from the 2024 paper does not reproduce, and that is the point.** Its LoRA
-  defect row (precision 0.2828, recall exactly 0.5000) was a collapsed run published as a
-  finding about LoRA. Here LoRA reaches 58.27 ± 0.42 across three seeds. Meanwhile full
-  fine-tuning replicates cleanly: **64.33** here against 65.08 in the paper and 64.92 in
-  Liu et al.
+- **Full fine-tuning on Devign replicates the literature.** 64.33 ± 1.37 here against
+  64.92 reported by Liu, Sha & Peng (ASE 2023) for the same model and task.
 
 <!-- RESULTS:START -->
 
@@ -59,29 +56,9 @@ repo are the ones that generated it.
 
 <!-- RESULTS:END -->
 
+![defect: quality vs. cost](results/figures/defect_quality_vs_cost.png)
+
 ---
-
-## Why this exists
-
-This repository began life as a copy of the artifact release for Liu, Sha & Peng,
-*An Empirical Study of Parameter-Efficient Fine-Tuning Methods for Pre-Trained Code Models*
-(ASE 2023) — see [THIRD_PARTY.md](THIRD_PARTY.md). That upstream code is still here,
-unmodified, under `clone/`, `defect/`, `petl/` and friends.
-
-On top of it, a 2024 Master's course project (CSCE 962, University of Nebraska–Lincoln)
-used that framework to compare full fine-tuning, LoRA, BitFit and Parallel Adapters on
-Devign and BigCloneBench, adding BitFit — which the upstream study does not cover — to the
-framework itself. That work is preserved in [`provenance/`](provenance/), including the
-original Slurm logs and metric dumps.
-
-**This repository is the 2026 rebuild of that project**: a clean, self-contained
-implementation under [`codetune/`](codetune/) that anyone can run, with the experimental
-design tightened and the efficiency measurements added. The original study was a
-scoped-down replication of Liu et al. run on a 32 GB V100; this reruns the same question on
-free compute, with equal budgets, three seeds, collapse detection and a full cost accounting
-— and reproduces the original's full-fine-tuning numbers while showing that one of its PEFT
-rows was a training failure. [`provenance/README.md`](provenance/README.md) documents what
-changed and why.
 
 ## The four methods
 
@@ -129,6 +106,9 @@ pip install -r requirements-dev.txt
 ```bash
 python -m codetune prepare
 ```
+
+Both datasets come from the public CodeXGLUE copies on the Hugging Face Hub. No account or
+token is needed.
 
 ```bash
 python -m codetune run --config configs/smoke.yaml
@@ -198,15 +178,24 @@ configs/        smoke (CPU) · defect · clone
 tests/          offline unit tests + an end-to-end smoke test
 notebooks/      free-GPU runner for Colab / Kaggle
 results/        per-run JSONs, summary.csv, summary.md, figures/
-provenance/     the 2024 Master's project preserved as evidence
 docs/           results discussion
 clone/ defect/ petl/ …   upstream code, unmodified (see THIRD_PARTY.md)
 ```
 
 ## Reading the results
 
-Full discussion, including where this rebuild disagrees with the 2024 numbers, is in
+Full discussion — imbalanced-baseline caveats, the two-sided memory story, and comparison
+against published numbers for the same model and tasks — is in
 [docs/RESULTS.md](docs/RESULTS.md).
+
+## Attribution
+
+This repository is built on the artifact release for Liu, Sha & Peng, *An Empirical Study of
+Parameter-Efficient Fine-Tuning Methods for Pre-Trained Code Models* (ASE 2023), whose code
+is preserved unmodified under `clone/`, `defect/`, `petl/`, `summarization/` and
+`translation/`. The benchmark in `codetune/` is a separate, self-contained implementation
+and does not depend on it. Full credit, dataset sources and paper references are in
+[THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## Licence
 

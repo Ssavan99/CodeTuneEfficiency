@@ -49,3 +49,6 @@ Thumbs.db
 
 # prepared datasets
 /data/
+
+# working notes, not product docs
+LOG.md
