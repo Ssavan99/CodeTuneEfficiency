@@ -11,6 +11,19 @@ It runs end to end on a single 6 GB consumer GPU. There is also a
 [notebook](notebooks/run_on_free_gpu.ipynb) for Colab's free T4 or Kaggle's free weekly
 GPU hours, so anyone can reproduce it without paying for compute.
 
+**Headline findings** (full discussion in [docs/RESULTS.md](docs/RESULTS.md)):
+
+- **PEFT's storage win is enormous and real** — a per-task BitFit checkpoint is 2.65 MB
+  against full fine-tuning's 475.49 MB, **179× smaller**. Training is ~33% faster.
+- **PEFT saves no GPU memory.** Freezing 99.4% of parameters changed peak VRAM by 0 MB;
+  LoRA and parallel adapters used 26 MB *more*. Activations dominate at these batch sizes,
+  and freezing weights does not shrink activations. If you want a model to fit on a smaller
+  card, this is the wrong tool.
+- **At the budget this hardware allows, quality does not separate the methods.** On Devign
+  all four land on the 54.1% majority-class baseline and 8 of 12 runs collapsed to a single
+  predicted class. On BigCloneBench only full fine-tuning never collapsed. Reported as a
+  negative result rather than dressed up as a ranking.
+
 <!-- RESULTS:START -->
 
 ## Results
@@ -156,10 +169,12 @@ datasets or the base model are unavailable.
 measures the schedule, not the method. Early stopping is disabled for the same reason: it
 silently hands more optimisation to whichever method happens to keep improving.
 
-**Scale is reduced and stated, not hidden.** The clone-detection split is subsampled to fit
-a $0 compute budget; the exact sizes are in `configs/clone.yaml` and recorded in every
-result JSON. A result anyone can verify is worth more than a larger number nobody can
-re-run.
+**Scale is reduced and stated, not hidden.** Both tasks are subsampled to 600 training
+examples to fit a $0 compute budget on a 6 GB card that thermally throttles under sustained
+load. The exact sizes are in the configs and recorded in every result JSON. A result anyone
+can verify is worth more than a larger number nobody can re-run — but see
+[docs/RESULTS.md](docs/RESULTS.md) for what that budget can and cannot support: the cost
+measurements are exact at any scale, the quality measurements are not.
 
 ## Layout
 

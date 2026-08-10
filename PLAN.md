@@ -191,17 +191,17 @@ fallback: cut to 2 seeds and note it here.
 
 ## 6. Phase 4 — Reporting and finish
 
-- [ ] 4.1 `README.md` — what this is, the honest provenance (upstream artifact + 2024
+- [x] 4.1 `README.md` — what this is, the honest provenance (upstream artifact + 2024
       Master's project + 2026 rebuild), quickstart, results tables with error bars, the
       figures, and an explicit "how this differs from the 2024 paper" section covering all
       six defects and how each was addressed
 - [x] 4.2 A short `docs/RESULTS.md` interpreting the findings — including any case where
       the rebuild *disagrees* with the paper, stated plainly
-- [ ] 4.3 Update FINDINGS.md with the rebuild's outcome
+- [x] 4.3 Update FINDINGS.md with the rebuild's outcome
 - [x] 4.4 Repo metadata note for Savan (description + topics to set on GitHub — the audit
       flags these as missing across the account)
-- [ ] 4.5 Final `/code-review` at high level over the whole branch; fix real findings
-- [ ] 4.6 Confirm DONE: `pytest` exits 0, end-to-end run works, `git status` clean,
+- [x] 4.5 Final `/code-review` at high level over the whole branch; fix real findings
+- [x] 4.6 Confirm DONE: `pytest` exits 0, end-to-end run works, `git status` clean,
       all boxes above ticked
 
 **Acceptance:** a stranger can clone, follow the README, and reproduce the smoke run in

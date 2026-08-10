@@ -1,6 +1,6 @@
 # FINDINGS — CodeTuneEfficiency
 
-**Date:** 2026-08-10 · **Branch:** `feat/peft-code-benchmark` · **Status:** Phase 0 complete
+**Date:** 2026-08-10 · **Branch:** `feat/peft-code-benchmark` · **Status:** Phase 3 complete (24/24 runs)
 
 This document records what actually survives of the CSCE 962 Master's project
 "Exploring Efficient Fine-Tuning Strategies for Pre-trained Code Models" (Savan Patel,
@@ -236,3 +236,44 @@ what was done in 2024 and exactly what the rebuild changes.
 | Uneven epochs | `defect.zip` → `…/trainer_state.json` |
 | Paper's tables | `final project/Exploring Efficient Fine-Tuning Strategies….pdf`, Tables 2–3 |
 | Local GPU | `nvidia-smi` → GeForce GTX 1660 Ti, 6144 MiB |
+
+---
+
+## 7. Outcome of the rebuild
+
+The plan in [PLAN.md](PLAN.md) was executed in full. 24 runs completed locally on the
+GTX 1660 Ti — 2 tasks × 4 methods × 3 seeds, every method on an identical budget. Numbers
+and discussion are in [docs/RESULTS.md](docs/RESULTS.md); the tables themselves are
+generated into [README.md](README.md) by `codetune aggregate`.
+
+**What the rebuild established:**
+
+1. **The cost axis the 2024 study omitted, measured exactly.** A per-task BitFit checkpoint
+   is 2.65 MB against full fine-tuning's 475.49 MB — 179× smaller — and PEFT training runs
+   ~33% faster. These figures are seed-independent and scale-independent.
+2. **A result that contradicts a common assumption:** PEFT saved *no* GPU memory. Peak VRAM
+   was 3,432 MB for both full fine-tuning and BitFit, and 3,458 MB for LoRA and parallel
+   adapters — slightly worse, since they add modules. Activations dominate; freezing weights
+   does not shrink them. Nothing in the original paper could have surfaced this, because it
+   measured no costs at all.
+3. **A negative result, reported as one.** At 600 training examples nothing learns Devign —
+   all four methods sit on the 54.1% majority baseline and 8 of 12 runs collapsed to a
+   single predicted class. On BigCloneBench only full fine-tuning never collapsed, while the
+   PEFT methods' seed spreads (LoRA: ±38.77 accuracy) exceed every gap between methods. No
+   ranking is claimed from either table.
+4. **Instrumentation that catches the 2024 failure automatically.** The collapse flag that
+   fires on 8 of 12 defect runs is exactly the condition the original LoRA defect run met
+   at full scale — precision 0.2828, recall exactly 0.5000 — and which was published as a
+   finding about LoRA. Detecting it is the difference.
+
+**The honesty ledger, updated.** §3 called the 2024 contribution replication rather than
+novel research, and that stands. This rebuild does not make it novel either. What it makes
+it is *verifiable*: a stranger can clone the repo, run one command, and reproduce every
+number, including the ones that say the experiment did not work. The portfolio claim is
+reproduction engineering and honest instrumentation — not a new method, and not a
+leaderboard.
+
+**Known limitation carried forward.** The quality columns are budget-limited, not
+method-limited. The same grid on a free Colab or Kaggle T4 via
+`notebooks/run_on_free_gpu.ipynb` uses the full Devign training set at sequence length 256
+and costs nothing; the §1 cost conclusions will not move, the quality conclusions should.
