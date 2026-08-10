@@ -1,0 +1,14 @@
+# Fast CPU sanity check - no GPU, finishes in a couple of minutes.
+# Proves the pipeline runs end to end; the numbers are meaningless at this size.
+task: defect
+method: bitfit
+seed: 42
+epochs: 1
+batch_size: 4
+grad_accum: 2
+max_length: 128
+limit_train: 64
+limit_eval: 32
+device: cpu
+fp16: false
+output_dir: results-smoke

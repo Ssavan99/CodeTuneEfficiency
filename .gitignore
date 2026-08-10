@@ -46,3 +46,6 @@ Thumbs.db
 # local-only task dirs (not part of upstream, hold ~1GB of downloaded data)
 /clone-POJ-104/
 /NL_code_search_adv/
+
+# prepared datasets
+/data/

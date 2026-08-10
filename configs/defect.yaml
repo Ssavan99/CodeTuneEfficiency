@@ -1,0 +1,13 @@
+# Devign defect detection (C) - full 21,854-example training set.
+# Fits a 6 GB card at seq 320 with fp16 and batch 8 x 4 accumulation.
+task: defect
+epochs: 3
+lr: 5.0e-5        # full fine-tuning
+peft_lr: 1.0e-4   # PEFT methods, as in the original study
+batch_size: 8
+grad_accum: 4
+max_length: 320
+weight_decay: 0.01
+warmup_ratio: 0.06
+fp16: true
+output_dir: results
