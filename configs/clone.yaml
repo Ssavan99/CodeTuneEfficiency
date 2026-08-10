@@ -1,16 +1,19 @@
 # BigCloneBench clone detection (Java).
-# Subsampled to 20k train / 4k test to fit the $0 compute budget. The subset is
-# deterministic given the seed and its size is recorded in every result file.
+#
+# Pair-shaped: two functions share one sequence, so the truncation is harsher
+# here than for defect detection at the same length. Subsampled to 2,500 train /
+# 2,000 test to fit the same $0 budget; subsets are deterministic and
+# label-stratified per seed and their sizes are recorded in every result JSON.
 task: clone
-epochs: 3
+epochs: 2
 lr: 5.0e-5
 peft_lr: 1.0e-4
-batch_size: 8
-grad_accum: 4
-max_length: 400
+batch_size: 16
+grad_accum: 2
+max_length: 128
 weight_decay: 0.01
 warmup_ratio: 0.06
 fp16: true
-limit_train: 20000
-limit_eval: 4000
+limit_train: 2500
+limit_eval: 2000
 output_dir: results

@@ -150,7 +150,7 @@ tests/          test_methods.py, test_data.py, test_cost.py, test_smoke_e2e.py
 - [x] 2.7 Tests: unit tests build a *tiny random* Roberta locally (no download, offline,
       fast) to assert freezing correctness and param accounting per method; one end-to-end
       test runs the smoke config and skips cleanly if the hub is unreachable
-- [ ] 2.8 Verify `pytest` exits 0 **and** `python -m codetune run --config configs/smoke.yaml`
+- [x] 2.8 Verify `pytest` exits 0 **and** `python -m codetune run --config configs/smoke.yaml`
       completes end to end
 - [ ] 2.9 `/code-review` at high level on the Phase 2 diff; fix real findings
 
@@ -164,9 +164,9 @@ no network access required by the unit tests.
 
 ## 5. Phase 3 — Experiments
 
-- [ ] 3.1 Sanity run: 1 method × 1 seed × 1 epoch on Devign on the local GPU; confirm it
+- [x] 3.1 Sanity run: 1 method × 1 seed × 1 epoch on Devign on the local GPU; confirm it
       fits in 6 GB and record the real minutes/epoch
-- [ ] 3.2 Recalibrate the grid from 3.1's measured throughput; record the final grid here
+- [x] 3.2 Recalibrate the grid from 3.1's measured throughput; record the final grid here
 - [ ] 3.3 **Defect (Devign)** — 4 methods × 3 seeds (42/1337/2024), equal budget, seq 320.
       Full 21 854-example train set
 - [ ] 3.4 **Clone (BigCloneBench)** — 4 methods × 3 seeds, seq 400, deterministically
@@ -225,10 +225,20 @@ minutes and the full grid in hours, on free compute, with no manual dataset wran
 | D8 | Save adapter-only checkpoints | The original saved 500 MB full state dicts, so the storage saving was never realised |
 | D9 | 2024 edits preserved as a patch, tree restored to pristine | Nothing lost, no history rewritten, clean diff |
 | D10 | Token scrubbed from working tree; Savan told to revoke it | It is not in git history, so no history surgery is needed |
+| D11 | Grid resized after a timing probe: 2 500 train, 2 epochs, seq 128 | Measured 0.25 s/example on the 1660 Ti. Turing GTX cards have no tensor cores, so fp16 barely helps and the originally planned grid would have taken ~24 h. The reduced sizes are disclosed in the configs and recorded in every result JSON. |
+| D12 | Both tasks kept, rather than one task at larger scale | The cross-task comparison (RQ3 in the original paper) is the more interesting result, and it survives reduced scale better than a single-task absolute number does. |
 
 ## 8. Blockers
 
-*(none yet — append here rather than stopping)*
+**B1 — local GPU is the binding constraint (open, worked around, not escalated).**
+The development card is a GTX 1660 Ti: 6 GB, Turing, and crucially *no tensor cores*, so
+fp16 gives almost no speedup. A timing probe measured 0.25 s per training example, which
+put the originally planned grid (full 21 854-example Devign train set, 3 epochs, seq 320)
+at roughly 24 hours. Worked around by resizing the grid (D11) rather than escalating,
+since the reduced scale is disclosed everywhere it matters and the $0 constraint holds.
+Anyone wanting the full-scale numbers can run the same grid on a free Colab or Kaggle T4
+via `notebooks/run_on_free_gpu.ipynb` — a T4 has tensor cores and is roughly 10x faster
+here. No money involved either way.
 
 ---
 
