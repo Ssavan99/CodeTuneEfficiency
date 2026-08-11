@@ -3,8 +3,8 @@ MIT License
 Copyright (c) 2023-2024 the authors of "An Empirical Study of Parameter-Efficient
 Fine-Tuning Methods for Pre-Trained Code Models" (upstream code under clone/, defect/,
 petl/, summarization/, translation/, clone-POJ-104/, NL_code_search_adv/)
-Copyright (c) 2024-2026 Savan Patel (codetune/, configs/, tests/, notebooks/, provenance/,
-results/ and root documentation)
+Copyright (c) 2024-2026 Savan Patel (codetune/, configs/, tests/, notebooks/, results/,
+docs/ and root documentation)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

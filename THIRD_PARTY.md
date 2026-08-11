@@ -16,8 +16,8 @@ README is kept as [`UPSTREAM_README.md`](UPSTREAM_README.md). It is MIT-licensed
 README.
 
 **Our own work in this repository is confined to** `codetune/`, `configs/`, `tests/`,
-`notebooks/`, `provenance/`, `results/`, and the root `README.md`, `FINDINGS.md`,
-`PLAN.md`, `THIRD_PARTY.md` and `LICENSE`.
+`notebooks/`, `results/`, `docs/`, and the root `README.md`, `THIRD_PARTY.md` and
+`LICENSE`.
 
 ## Models and datasets
 

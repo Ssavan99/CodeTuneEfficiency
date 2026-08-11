@@ -79,9 +79,9 @@ Seed-independent, and the reason this benchmark exists.
 | `parallel_adapter` | 0.720% (896,450) | 3.42 MB | **139× smaller** | 9.1 min | 4,460 MB (−34.7%) | 7,508 MB (+1.8%) |
 
 **Storage is where PEFT wins, decisively.** 475 MB per task versus 2.65 MB. Across ten
-tasks: 4.75 GB versus 27 MB. This is the saving the 2024 runs never realised — they wrote a
-complete ~500 MB `model.safetensors` for every method, PEFT included, discarding it
-entirely.
+tasks: 4.75 GB versus 27 MB. It is also a saving that is easy to throw away by accident —
+saving the whole model after a PEFT run, which most training scripts do by default, discards
+it entirely. This benchmark measures the trainable tensors only.
 
 **Training is 17–25% faster** — real, but far less than the 140× parameter ratio suggests.
 The backward pass still traverses the whole network; only the optimizer update and gradient
@@ -105,34 +105,15 @@ smaller than the parameter count suggests, and on this configuration it would no
 the job fit on a meaningfully smaller card. Whether it does on *your* card depends on where
 your activation peak sits — which is exactly why both numbers are recorded per run.
 
-None of this is visible in the 2024 paper, which reported no cost measurements at all.
+## 4. Sanity check against published numbers
 
-## 4. Comparison with the 2024 study and with Liu et al.
-
-The 2024 numbers and raw artifacts are in [`provenance/`](../provenance/).
-
-| Devign, full fine-tuning | Accuracy |
+| Devign, CodeBERT, full fine-tuning | Accuracy |
 |---|---|
-| Liu, Sha & Peng (ASE 2023), CodeBERT | 64.92 |
-| 2024 CSCE 962 paper | 65.08 |
-| **This rebuild** | **64.33 ± 1.37** |
+| Liu, Sha & Peng, ASE 2023 | 64.92 |
+| **This benchmark** | **64.33 ± 1.37** |
 
-Three independent implementations within 0.75 points. That is a clean replication and good
-evidence the pipeline is sound. `parallel_adapter` matches too: 58.78 in the 2024 paper
-against **59.00 ± 0.70** here.
-
-**The one number that does not reproduce is the interesting one.** The 2024 paper reports
-LoRA on Devign at precision 0.2828 and recall exactly 0.5000 — the arithmetic signature of a
-classifier emitting a single class for every input. Here LoRA reaches 58.27 ± 0.42 accuracy
-with positive F1 18.91 ± 0.13 and a majority-class rate of 0.944 across all three seeds.
-
-**LoRA does learn defect detection. That row was a training failure, not a property of
-LoRA** — and it was published as a finding about LoRA because nothing in the pipeline
-checked for it. The collapse detector added here fires on exactly that condition.
-
-Note also that the 2024 paper's full and BitFit defect rows came from runs with
-`train_samples = 100` (see [`provenance/README.md`](../provenance/README.md)), so its BitFit
-number was never comparable to the rows beside it.
+Within 0.6 points of the published figure for the same model, task and protocol — good
+evidence that the pipeline is sound and that the cost numbers beside it can be trusted.
 
 ## 5. Limitations
 
