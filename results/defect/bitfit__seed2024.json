@@ -1,0 +1,82 @@
+{
+  "run_id": "defect__bitfit__seed2024",
+  "config": {
+    "task": "defect",
+    "method": "bitfit",
+    "seed": 2024,
+    "epochs": 2,
+    "lr": 5e-05,
+    "peft_lr": 0.0001,
+    "batch_size": 32,
+    "grad_accum": 1,
+    "max_length": 256,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.06,
+    "fp16": true,
+    "device": "auto",
+    "limit_train": null,
+    "limit_eval": 1000,
+    "model_name": "microsoft/codebert-base",
+    "output_dir": "results",
+    "method_kwargs": {}
+  },
+  "effective_learning_rate": 0.0001,
+  "effective_batch_size": 32,
+  "data": {
+    "train": {
+      "split": "train",
+      "n_available": 21854,
+      "n_used": 21854,
+      "subsampled": false,
+      "positive_rate": 0.4584
+    },
+    "test": {
+      "split": "test",
+      "n_available": 2732,
+      "n_used": 1000,
+      "subsampled": true,
+      "positive_rate": 0.459
+    }
+  },
+  "metrics": {
+    "accuracy": 0.571,
+    "macro_precision": 0.6997432483834158,
+    "macro_recall": 0.5338355099690317,
+    "macro_f1": 0.43027207496503944,
+    "positive_f1": 0.147117296222664,
+    "predicted_positive_rate": 0.044,
+    "majority_class_rate": 0.956,
+    "collapsed": false
+  },
+  "cost": {
+    "trainable_params": 694274,
+    "total_params": 124647170,
+    "live_total_params": 124647170,
+    "trainable_pct": 0.557,
+    "seconds": 562.27,
+    "peak_memory_bytes": 4882853888,
+    "peak_memory_mb": 4656.7,
+    "peak_reserved_bytes": 7866417152,
+    "peak_reserved_mb": 7502.0,
+    "delta_checkpoint_bytes": 2777096,
+    "delta_checkpoint_mb": 2.65
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.69069
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6738
+    }
+  ],
+  "environment": {
+    "device": "cuda",
+    "gpu": "Tesla T4",
+    "torch": "2.11.0+cu128",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "fp16": true
+  }
+}

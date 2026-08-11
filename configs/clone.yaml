@@ -1,0 +1,26 @@
+# BigCloneBench clone detection (Java).
+#
+# Settings that produced the committed results, on a free Colab T4. See
+# notebooks/run_on_free_gpu.ipynb.
+#
+# Train subsampled to 20,000 of 901,028 pairs and test to 1,000 of 415,416 -
+# deterministic and label-stratified per seed, sizes recorded in every result
+# JSON. The full split is far larger than one free session allows.
+#
+# NOTE ON THE BASELINE: only ~13.6% of test pairs are clones, so the
+# majority-class accuracy is 86.4%. Read positive-class F1, not accuracy.
+#
+# ON A SMALLER CARD: see the note in configs/defect.yaml.
+task: clone
+limit_train: 20000
+epochs: 2
+lr: 5.0e-5        # full fine-tuning
+peft_lr: 1.0e-4   # PEFT methods, as in the original study
+batch_size: 32
+grad_accum: 1
+max_length: 256
+weight_decay: 0.01
+warmup_ratio: 0.06
+fp16: true
+limit_eval: 1000
+output_dir: results

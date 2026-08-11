@@ -1,0 +1,26 @@
+# Devign defect detection (C).
+#
+# These are the settings that produced the results committed in results/ and
+# reported in README.md - a free Colab T4 (16 GB, tensor cores). Reproducing the
+# published numbers means running exactly this file; see
+# notebooks/run_on_free_gpu.ipynb, which does that end to end for free.
+#
+# Full 21,854-example training set. Test subsampled to 1,000 of 2,732 to keep
+# 24 runs inside one Colab session; every size is recorded in each result JSON.
+#
+# ON A SMALLER CARD: a 6 GB GPU cannot run this. Drop batch_size to 8 with
+# grad_accum 4, max_length to 128, and set limit_train (e.g. 2000). Expect a
+# different - and at small limit_train, much worse - set of quality numbers; the
+# cost columns are unaffected.
+task: defect
+epochs: 2
+lr: 5.0e-5        # full fine-tuning
+peft_lr: 1.0e-4   # PEFT methods, as in the original study
+batch_size: 32
+grad_accum: 1
+max_length: 256
+weight_decay: 0.01
+warmup_ratio: 0.06
+fp16: true
+limit_eval: 1000
+output_dir: results

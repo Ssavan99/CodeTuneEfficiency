@@ -1,0 +1,82 @@
+{
+  "run_id": "clone__full__seed42",
+  "config": {
+    "task": "clone",
+    "method": "full",
+    "seed": 42,
+    "epochs": 2,
+    "lr": 5e-05,
+    "peft_lr": 0.0001,
+    "batch_size": 32,
+    "grad_accum": 1,
+    "max_length": 256,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.06,
+    "fp16": true,
+    "device": "auto",
+    "limit_train": 20000,
+    "limit_eval": 1000,
+    "model_name": "microsoft/codebert-base",
+    "output_dir": "results",
+    "method_kwargs": {}
+  },
+  "effective_learning_rate": 5e-05,
+  "effective_batch_size": 32,
+  "data": {
+    "train": {
+      "split": "train",
+      "n_available": 901028,
+      "n_used": 20000,
+      "subsampled": true,
+      "positive_rate": 0.5003
+    },
+    "test": {
+      "split": "test",
+      "n_available": 415416,
+      "n_used": 1000,
+      "subsampled": true,
+      "positive_rate": 0.136
+    }
+  },
+  "metrics": {
+    "accuracy": 0.924,
+    "macro_precision": 0.82890345470399,
+    "macro_recall": 0.8723788126361656,
+    "macro_f1": 0.8484739734111699,
+    "positive_f1": 0.7414965986394558,
+    "predicted_positive_rate": 0.158,
+    "majority_class_rate": 0.842,
+    "collapsed": false
+  },
+  "cost": {
+    "trainable_params": 124647170,
+    "total_params": 124647170,
+    "live_total_params": 124647170,
+    "trainable_pct": 100.0,
+    "seconds": 670.6,
+    "peak_memory_bytes": 7151280128,
+    "peak_memory_mb": 6820.0,
+    "peak_reserved_bytes": 7463763968,
+    "peak_reserved_mb": 7118.0,
+    "delta_checkpoint_bytes": 498588680,
+    "delta_checkpoint_mb": 475.49
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.30135
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.12037
+    }
+  ],
+  "environment": {
+    "device": "cuda",
+    "gpu": "Tesla T4",
+    "torch": "2.11.0+cu128",
+    "python": "3.12.13",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "fp16": true
+  }
+}
