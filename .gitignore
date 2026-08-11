@@ -35,7 +35,6 @@ __pycache__/
 results/**/raw/
 *.log
 slurm-*.out
-!provenance/original-runs/slurm-*.out
 
 # --- os / editor ---
 .DS_Store
